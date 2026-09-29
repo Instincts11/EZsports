@@ -9,6 +9,6 @@ class BillStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color color = status == 'paid' ? AppColors.success : AppColors.finance;
-        return Chip(label: Text(status), backgroundColor: color.withOpacity(0.15));
+        return Chip(label: Text(status), backgroundColor: color.withValues(alpha: 0.15));
   }
 }

@@ -1,5 +1,6 @@
+import 'package:ezsports/core/constants/app_strings.dart';
 import 'package:ezsports/core/widgets/app_button.dart';
-import 'package:ezsports/core/widgets/app_text_field.dart';
+import 'package:ezsports/core/widgets/coach_search_field.dart';
 import 'package:flutter/material.dart';
 
 class LoginForm extends StatelessWidget {
@@ -18,11 +19,16 @@ class LoginForm extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
-        AppTextField(controller: emailController, label: 'Email'),
+        CoachSearchField(controller: emailController, hint: AppStrings.email, showSearchIcon: false),
         const SizedBox(height: 12),
-        AppTextField(controller: passwordController, label: 'Password', obscureText: true),
+        CoachSearchField(
+          controller: passwordController,
+          hint: AppStrings.password,
+          showSearchIcon: false,
+          obscureText: true,
+        ),
         const SizedBox(height: 24),
-        AppButton(label: 'Login', onPressed: onSubmit),
+        AppButton(label: AppStrings.loginAction, onPressed: onSubmit),
       ],
     );
   }

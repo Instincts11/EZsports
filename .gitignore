@@ -14,3 +14,11 @@ build/
 .idea/
 .vscode/
 *.log
+.tooling/
+**/android/local.properties
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/macos/Flutter/ephemeral/
+**/windows/flutter/ephemeral/
+**/linux/flutter/ephemeral/

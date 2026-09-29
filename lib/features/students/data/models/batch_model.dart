@@ -4,12 +4,28 @@ class BatchModel {
     required this.name,
     required this.days,
     required this.studentCount,
+    this.timeRange = '',
+    this.pitch = '',
+    this.capacity = 0,
   });
 
   final int batchId;
   final String name;
   final String days;
   final int studentCount;
+  final String timeRange;
+  final String pitch;
+  final int capacity;
+
+  String get placeLine {
+    if (timeRange.isEmpty) {
+      return pitch;
+    }
+    if (pitch.isEmpty) {
+      return timeRange;
+    }
+    return '$timeRange · $pitch';
+  }
 
   factory BatchModel.fromJson(Map<String, dynamic> json) {
     return BatchModel(
