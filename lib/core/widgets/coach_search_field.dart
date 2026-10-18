@@ -12,6 +12,7 @@ class CoachSearchField extends StatelessWidget {
     this.onChanged,
     this.obscureText = false,
     this.showSearchIcon = true,
+    this.autofillHints,
   });
 
   final String hint;
@@ -19,6 +20,7 @@ class CoachSearchField extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final bool obscureText;
   final bool showSearchIcon;
+  final Iterable<String>? autofillHints;
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +28,7 @@ class CoachSearchField extends StatelessWidget {
       controller: controller,
       onChanged: onChanged,
       obscureText: obscureText,
+      autofillHints: autofillHints,
       style: AppTextStyles.bodyOnDark,
       cursorColor: AppColors.primary,
       decoration: InputDecoration(

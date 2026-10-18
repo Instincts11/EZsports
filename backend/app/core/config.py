@@ -9,6 +9,17 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 480
     database_url: str = "sqlite:///./id_sports.db"
     cors_origins: str = "http://localhost:3000,http://localhost:8080"
+    sms_provider: str = ""
+    sms_country_code: str = "91"
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_from_number: str = ""
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    smtp_use_tls: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

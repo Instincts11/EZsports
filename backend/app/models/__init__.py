@@ -8,6 +8,7 @@ from app.models.enrollment import Enrollment
 from app.models.enums import AttendanceStatus, BillStatus, LeaveStatus, MatchStatus, UserRole
 from app.models.leave import Leave
 from app.models.match import Match
+from app.models.otp_code import OtpCode
 from app.models.session import Session
 from app.models.session_assignment import SessionAssignment
 from app.models.student import Student
@@ -29,6 +30,7 @@ __all__ = [
     "LeaveStatus",
     "Match",
     "MatchStatus",
+    "OtpCode",
     "Session",
     "SessionAssignment",
     "Student",

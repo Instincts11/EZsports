@@ -1,34 +1,40 @@
+import 'package:dio/dio.dart';
 import 'package:ezsports/core/constants/app_colors.dart';
 import 'package:ezsports/core/constants/app_icons.dart';
 import 'package:ezsports/core/constants/app_sizes.dart';
 import 'package:ezsports/core/constants/app_text_styles.dart';
 import 'package:ezsports/core/widgets/detail_field.dart';
+import 'package:ezsports/features/player/data/models/player_profile_model.dart';
+import 'package:ezsports/features/player/providers/player_profile_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class PlayerDetailsScreen extends StatefulWidget {
+class PlayerDetailsScreen extends ConsumerStatefulWidget {
   const PlayerDetailsScreen({super.key});
 
   @override
-  State<PlayerDetailsScreen> createState() => _PlayerDetailsScreenState();
+  ConsumerState<PlayerDetailsScreen> createState() => _PlayerDetailsScreenState();
 }
 
-class _PlayerDetailsScreenState extends State<PlayerDetailsScreen> {
-  final TextEditingController _firstName = TextEditingController(text: 'Advaita');
-  final TextEditingController _lastName = TextEditingController(text: 'S');
-  final TextEditingController _dob = TextEditingController(text: '12 Mar 2014');
-  final TextEditingController _gender = TextEditingController(text: 'Female');
-  final TextEditingController _mobile = TextEditingController(text: '+91 98765 43210');
-  final TextEditingController _emergency = TextEditingController(text: '+91 99618 61588');
-  final TextEditingController _guardian = TextEditingController(text: 'Meera S');
-  final TextEditingController _guardianMobile = TextEditingController(text: '+91 98470 22109');
-  final TextEditingController _position = TextEditingController(text: 'Attacking midfield');
-  final TextEditingController _foot = TextEditingController(text: 'Right');
-  final TextEditingController _school = TextEditingController(text: 'Esperanza Public');
-  final TextEditingController _schoolClass = TextEditingController(text: '6');
-  final TextEditingController _jersey = TextEditingController(text: '7');
-  final TextEditingController _blood = TextEditingController(text: 'O+');
-  final TextEditingController _allergies = TextEditingController(text: 'None recorded');
+class _PlayerDetailsScreenState extends ConsumerState<PlayerDetailsScreen> {
+  final TextEditingController _firstName = TextEditingController();
+  final TextEditingController _lastName = TextEditingController();
+  final TextEditingController _dob = TextEditingController();
+  final TextEditingController _gender = TextEditingController();
+  final TextEditingController _mobile = TextEditingController();
+  final TextEditingController _emergency = TextEditingController();
+  final TextEditingController _guardian = TextEditingController();
+  final TextEditingController _guardianMobile = TextEditingController();
+  final TextEditingController _position = TextEditingController();
+  final TextEditingController _foot = TextEditingController();
+  final TextEditingController _school = TextEditingController();
+  final TextEditingController _schoolClass = TextEditingController();
+  final TextEditingController _jersey = TextEditingController();
+  final TextEditingController _blood = TextEditingController();
+  final TextEditingController _allergies = TextEditingController();
+  bool _hydrated = false;
+  bool _saving = false;
 
   @override
   void dispose() {
@@ -54,77 +60,192 @@ class _PlayerDetailsScreenState extends State<PlayerDetailsScreen> {
     super.dispose();
   }
 
-  void _save() {
+  void _fillFrom(PlayerProfileModel profile) {
+    _firstName.text = profile.firstName ?? '';
+    _lastName.text = profile.lastName ?? '';
+    _dob.text = profile.dob ?? '';
+    _gender.text = profile.gender ?? '';
+    _mobile.text = profile.mobile ?? '';
+    _emergency.text = profile.emergencyContact ?? '';
+    _guardian.text = profile.guardianName ?? '';
+    _guardianMobile.text = profile.parentMobile;
+    _position.text = profile.position ?? '';
+    _foot.text = profile.preferredFoot ?? '';
+    _school.text = profile.school ?? '';
+    _schoolClass.text = profile.schoolClass ?? '';
+    _jersey.text = profile.jersey ?? '';
+    _blood.text = profile.bloodGroup ?? '';
+    _allergies.text = profile.allergies ?? '';
+    _hydrated = true;
+  }
+
+  Future<void> _save() async {
     if (_firstName.text.trim().isEmpty || _guardian.text.trim().isEmpty || _guardianMobile.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Add the player name and a guardian contact before saving.')),
       );
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Saved details for ${_firstName.text.trim()} ${_lastName.text.trim()}'.trim())),
-    );
-    context.go('/player/profile');
+
+    setState(() => _saving = true);
+    try {
+      final String first = _firstName.text.trim();
+      final String last = _lastName.text.trim();
+      await ref.read(playerRepositoryProvider).updateProfile(<String, dynamic>{
+        'first_name': first,
+        'last_name': last,
+        'name': '$first $last'.trim(),
+        'dob': _dob.text.trim().isEmpty ? null : _dob.text.trim(),
+        'gender': _gender.text.trim().isEmpty ? null : _gender.text.trim(),
+        'mobile': _mobile.text.trim().isEmpty ? null : _mobile.text.trim(),
+        'emergency_contact': _emergency.text.trim().isEmpty ? null : _emergency.text.trim(),
+        'guardian_name': _guardian.text.trim(),
+        'parent_mobile': _guardianMobile.text.trim(),
+        'position': _position.text.trim().isEmpty ? null : _position.text.trim(),
+        'preferred_foot': _foot.text.trim().isEmpty ? null : _foot.text.trim(),
+        'school': _school.text.trim().isEmpty ? null : _school.text.trim(),
+        'school_class': _schoolClass.text.trim().isEmpty ? null : _schoolClass.text.trim(),
+        'jersey': _jersey.text.trim().isEmpty ? null : _jersey.text.trim(),
+        'blood_group': _blood.text.trim().isEmpty ? null : _blood.text.trim(),
+        'allergies': _allergies.text.trim().isEmpty ? null : _allergies.text.trim(),
+      });
+      ref.invalidate(playerProfileProvider);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Saved details for $first $last'.trim())),
+      );
+      context.go('/player/profile');
+    } on DioException catch (error) {
+      final Object? detail = error.response?.data is Map<String, dynamic>
+          ? (error.response!.data as Map<String, dynamic>)['detail']
+          : null;
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(detail?.toString() ?? 'Could not save details')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final AsyncValue<PlayerProfileModel> profileAsync = ref.watch(playerProfileProvider);
+    profileAsync.whenData((PlayerProfileModel profile) {
+      if (!_hydrated) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !_hydrated) {
+            setState(() => _fillFrom(profile));
+          }
+        });
+      }
+    });
+
     return Scaffold(
       backgroundColor: AppColors.playerBackground,
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(AppSizes.screenPadding, 8, AppSizes.screenPadding, 28),
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                IconButton(
-                  onPressed: () => context.go('/player/profile'),
-                  icon: const Icon(AppIcons.back, color: AppColors.playerAccent),
-                ),
-                const Expanded(
-                  child: Text('Player details', style: AppTextStyles.pageTitle),
-                ),
-              ],
-            ),
-            const Padding(
-              padding: EdgeInsets.only(left: 12, bottom: 18),
-              child: Text('Enter the details shown on your profile.', style: AppTextStyles.muted),
-            ),
-            const _SectionLabel('Player'),
-            DetailField(label: 'First name', controller: _firstName, accent: AppColors.playerAccent),
-            DetailField(label: 'Last name', controller: _lastName, accent: AppColors.playerAccent),
-            DetailField(label: 'Date of birth', controller: _dob, accent: AppColors.playerAccent),
-            DetailField(label: 'Gender', controller: _gender, accent: AppColors.playerAccent),
-            DetailField(label: 'Mobile', controller: _mobile, accent: AppColors.playerAccent, keyboardType: TextInputType.phone),
-            DetailField(label: 'Emergency', controller: _emergency, accent: AppColors.playerAccent, keyboardType: TextInputType.phone),
-            const _SectionLabel('Guardian'),
-            DetailField(label: 'Guardian name', controller: _guardian, accent: AppColors.playerAccent),
-            DetailField(label: 'Guardian mobile', controller: _guardianMobile, accent: AppColors.playerAccent, keyboardType: TextInputType.phone),
-            const _SectionLabel('Playing'),
-            DetailField(label: 'Position', controller: _position, accent: AppColors.playerAccent),
-            DetailField(label: 'Preferred foot', controller: _foot, accent: AppColors.playerAccent),
-            DetailField(label: 'School', controller: _school, accent: AppColors.playerAccent),
-            DetailField(label: 'Class', controller: _schoolClass, accent: AppColors.playerAccent),
-            DetailField(label: 'Jersey', controller: _jersey, accent: AppColors.playerAccent, keyboardType: TextInputType.number),
-            const _SectionLabel('Medical'),
-            DetailField(label: 'Blood group', controller: _blood, accent: AppColors.playerAccent),
-            DetailField(label: 'Allergies', controller: _allergies, accent: AppColors.playerAccent, maxLines: 2),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.playerAccent,
-                  foregroundColor: AppColors.onPrimary,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-                child: const Text('Save details', style: TextStyle(fontWeight: FontWeight.w700)),
+        child: profileAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (Object error, StackTrace stackTrace) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Could not load saved player details. Sign in as a player after OTP signup.\n$error',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.muted,
               ),
             ),
-          ],
+          ),
+          data: (PlayerProfileModel profile) {
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(AppSizes.screenPadding, 8, AppSizes.screenPadding, 28),
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    IconButton(
+                      onPressed: () => context.go('/player/profile'),
+                      icon: const Icon(AppIcons.back, color: AppColors.playerAccent),
+                    ),
+                    const Expanded(
+                      child: Text('Player details', style: AppTextStyles.pageTitle),
+                    ),
+                  ],
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(left: 12, bottom: 18),
+                  child: Text('These details are stored on your account.', style: AppTextStyles.muted),
+                ),
+                if (profile.otpVerifiedAt != null)
+                  const Padding(
+                    padding: EdgeInsets.only(left: 12, bottom: 12),
+                    child: Text('Signup OTP verified', style: AppTextStyles.muted),
+                  ),
+                const _SectionLabel('Player'),
+                DetailField(label: 'First name', controller: _firstName, accent: AppColors.playerAccent),
+                DetailField(label: 'Last name', controller: _lastName, accent: AppColors.playerAccent),
+                DetailField(label: 'Date of birth', controller: _dob, accent: AppColors.playerAccent),
+                DetailField(label: 'Gender', controller: _gender, accent: AppColors.playerAccent),
+                DetailField(
+                  label: 'Mobile',
+                  controller: _mobile,
+                  accent: AppColors.playerAccent,
+                  keyboardType: TextInputType.phone,
+                ),
+                DetailField(
+                  label: 'Emergency',
+                  controller: _emergency,
+                  accent: AppColors.playerAccent,
+                  keyboardType: TextInputType.phone,
+                ),
+                const _SectionLabel('Guardian'),
+                DetailField(label: 'Guardian name', controller: _guardian, accent: AppColors.playerAccent),
+                DetailField(
+                  label: 'Guardian mobile',
+                  controller: _guardianMobile,
+                  accent: AppColors.playerAccent,
+                  keyboardType: TextInputType.phone,
+                ),
+                const _SectionLabel('Playing'),
+                DetailField(label: 'Position', controller: _position, accent: AppColors.playerAccent),
+                DetailField(label: 'Preferred foot', controller: _foot, accent: AppColors.playerAccent),
+                DetailField(label: 'School', controller: _school, accent: AppColors.playerAccent),
+                DetailField(label: 'Class', controller: _schoolClass, accent: AppColors.playerAccent),
+                DetailField(
+                  label: 'Jersey',
+                  controller: _jersey,
+                  accent: AppColors.playerAccent,
+                  keyboardType: TextInputType.number,
+                ),
+                const _SectionLabel('Medical'),
+                DetailField(label: 'Blood group', controller: _blood, accent: AppColors.playerAccent),
+                DetailField(label: 'Allergies', controller: _allergies, accent: AppColors.playerAccent, maxLines: 2),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: _saving ? null : _save,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.playerAccent,
+                      foregroundColor: AppColors.onPrimary,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: Text(
+                      _saving ? 'Saving…' : 'Save details',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

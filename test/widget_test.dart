@@ -15,10 +15,10 @@ void main() {
     expect(find.text('My attendance'), findsOneWidget);
     expect(find.text("I'm here"), findsWidgets);
 
-    await tester.tap(find.text('Batches'));
+    await tester.tap(find.text('Fixtures'));
     await tester.pumpAndSettle();
-    expect(find.text('My batches'), findsOneWidget);
-    expect(find.text('Summer Camp'), findsOneWidget);
+    expect(find.text('My fixtures'), findsOneWidget);
+    expect(find.text('Kochi United'), findsWidgets);
 
     await tester.tap(find.text('Schedule'));
     await tester.pumpAndSettle();
@@ -34,9 +34,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Missed'), findsWidgets);
 
-    await tester.tap(find.text('Batches').first);
+    await tester.tap(find.text('Fixtures').first);
     await tester.pumpAndSettle();
-    expect(find.text('Weekend Evening'), findsWidgets);
+    expect(find.text('Kochi United'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 
@@ -50,10 +50,10 @@ void main() {
     expect(find.text("Today's sessions"), findsOneWidget);
     expect(find.text('Weekend Morning'), findsOneWidget);
 
-    await tester.tap(find.text('Batches'));
+    await tester.tap(find.text('Fixtures'));
     await tester.pumpAndSettle();
-    expect(find.text('143 players across 4 groups'), findsOneWidget);
-    expect(find.text('Summer Camp'), findsOneWidget);
+    expect(find.text('3 matches · 1 lineup still open'), findsOneWidget);
+    expect(find.text('Academy Cup'), findsWidgets);
 
     await tester.tap(find.text('Sessions'));
     await tester.pumpAndSettle();

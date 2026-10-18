@@ -1,7 +1,10 @@
 import 'package:ezsports/core/widgets/coach_shell.dart';
 import 'package:ezsports/core/widgets/player_shell.dart';
+import 'package:ezsports/features/admin/presentation/screens/admin_home_screen.dart';
 import 'package:ezsports/features/attendance/presentation/screens/student_attendance_screen.dart';
 import 'package:ezsports/features/auth/presentation/screens/login_screen.dart';
+import 'package:ezsports/features/auth/presentation/screens/otp_verify_screen.dart';
+import 'package:ezsports/features/auth/presentation/screens/player_signup_screen.dart';
 import 'package:ezsports/features/classes/presentation/screens/classes_screen.dart';
 import 'package:ezsports/features/home/presentation/screens/home_screen.dart';
 import 'package:ezsports/features/player/presentation/screens/player_batches_screen.dart';
@@ -30,6 +33,27 @@ final class AppRouter {
       GoRoute(
         path: '/login',
         builder: (BuildContext context, GoRouterState state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/admin',
+        builder: (BuildContext context, GoRouterState state) => const AdminHomeScreen(),
+      ),
+      GoRoute(
+        path: '/signup',
+        builder: (BuildContext context, GoRouterState state) => const PlayerSignupScreen(),
+      ),
+      GoRoute(
+        path: '/signup/otp',
+        builder: (BuildContext context, GoRouterState state) {
+          final Object? extra = state.extra;
+          final Map<String, String> data = extra is Map<String, String>
+              ? extra
+              : <String, String>{};
+          return OtpVerifyScreen(
+            mobile: data['mobile'] ?? '',
+            purpose: data['purpose'] ?? 'signup',
+          );
+        },
       ),
       StatefulShellRoute.indexedStack(
         builder: (BuildContext context, GoRouterState state, StatefulNavigationShell navigationShell) {

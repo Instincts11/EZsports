@@ -4,7 +4,7 @@ final class AppIcons {
   AppIcons._();
 
   static const IconData home = Icons.home_rounded;
-  static const IconData batches = Icons.layers_rounded;
+  static const IconData batches = Icons.emoji_events_rounded;
   static const IconData players = Icons.person_outline_rounded;
   static const IconData sessions = Icons.calendar_month_rounded;
   static const IconData profile = Icons.person_rounded;

@@ -2,7 +2,13 @@ final class ApiEndpoints {
   ApiEndpoints._();
 
   static const String login = '/api/v1/auth/login';
+  static const String loginSendPassword = '/api/v1/auth/login/send-password';
+  static const String loginRequestOtp = '/api/v1/auth/login/request-otp';
+  static const String loginVerifyOtp = '/api/v1/auth/login/verify-otp';
   static const String me = '/api/v1/auth/me';
+  static const String signupRequestOtp = '/api/v1/auth/signup/request-otp';
+  static const String signupVerifyOtp = '/api/v1/auth/signup/verify-otp';
+  static const String playerProfile = '/api/v1/player/profile';
   static const String academy = '/api/v1/academy';
   static const String accountants = '/api/v1/accountants';
   static const String accountantMe = '/api/v1/accountants/me';

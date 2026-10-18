@@ -47,23 +47,11 @@ class ProfileScreen extends ConsumerWidget {
                 const _DetailRow(label: 'Role', value: 'Head coach'),
                 const _DetailRow(label: 'Since', value: 'Jan 2022'),
                 const SizedBox(height: 8),
-                const Text('Assigned batches', style: AppTextStyles.title),
+                const Text('Upcoming fixtures', style: AppTextStyles.title),
                 const SizedBox(height: 8),
-                ...batches.map(
-                  (BatchModel batch) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Column(
-                      children: <Widget>[
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text('${batch.name} · ${batch.studentCount} players', style: AppTextStyles.body),
-                        ),
-                        const SizedBox(height: 10),
-                        const Divider(height: 1, color: AppColors.divider),
-                      ],
-                    ),
-                  ),
-                ),
+                const _FixtureLine('Sun 13 Sep · Kochi United · lineup set'),
+                const _FixtureLine('Sat 20 Sep · Academy Cup · lineup open'),
+                const _FixtureLine('30 Aug · Harbour FC · 2–1, sheet unsigned'),
                 const SizedBox(height: 8),
                 const Text('This week', style: AppTextStyles.title),
                 const SizedBox(height: 10),
@@ -178,6 +166,23 @@ class _ChevronRow extends StatelessWidget {
           const Spacer(),
           const Icon(AppIcons.chevron, color: AppColors.primary),
         ],
+      ),
+    );
+  }
+}
+
+class _FixtureLine extends StatelessWidget {
+  const _FixtureLine(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(text, style: AppTextStyles.body),
       ),
     );
   }

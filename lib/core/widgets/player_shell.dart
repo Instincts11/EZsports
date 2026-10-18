@@ -42,8 +42,8 @@ class PlayerShell extends StatelessWidget {
                 label: AppStrings.home,
               ),
               NavigationDestination(
-                icon: Icon(Icons.groups_outlined, color: AppColors.playerNavInactive),
-                selectedIcon: Icon(Icons.groups_rounded, color: AppColors.playerAccent),
+                icon: Icon(Icons.emoji_events_outlined, color: AppColors.playerNavInactive),
+                selectedIcon: Icon(Icons.emoji_events_rounded, color: AppColors.playerAccent),
                 label: AppStrings.batches,
               ),
               NavigationDestination(

@@ -5,6 +5,7 @@ class UserRole(str, enum.Enum):
     SUPER_ADMIN = "super_admin"
     ACCOUNTANT = "accountant"
     COACH = "coach"
+    PLAYER = "player"
 
 
 class BillStatus(str, enum.Enum):

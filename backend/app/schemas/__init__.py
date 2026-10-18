@@ -12,10 +12,12 @@ class ORMModel(BaseModel):
 
 class MessageResponse(BaseModel):
     message: str
+    access_token: str | None = None
+    role: UserRole | None = None
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    identifier: str
     password: str
 
 
@@ -34,6 +36,7 @@ class MeResponse(ORMModel):
     admin_id: int | None = None
     accountant_id: int | None = None
     coach_id: int | None = None
+    student_id: int | None = None
 
 
 class AcademyCreate(BaseModel):
@@ -110,17 +113,89 @@ class StudentCreate(BaseModel):
 
 class StudentUpdate(BaseModel):
     name: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    dob: str | None = None
+    gender: str | None = None
+    mobile: str | None = None
+    emergency_contact: str | None = None
     parent_mobile: str | None = None
+    guardian_name: str | None = None
+    position: str | None = None
+    preferred_foot: str | None = None
+    school: str | None = None
+    school_class: str | None = None
+    jersey: str | None = None
+    blood_group: str | None = None
+    allergies: str | None = None
     photo_url: str | None = None
 
 
 class StudentResponse(ORMModel):
     student_id: int
     admin_id: int
+    user_id: int | None = None
     name: str
+    first_name: str | None = None
+    last_name: str | None = None
+    dob: str | None = None
+    gender: str | None = None
+    mobile: str | None = None
+    emergency_contact: str | None = None
     parent_mobile: str
+    guardian_name: str | None = None
+    position: str | None = None
+    preferred_foot: str | None = None
+    school: str | None = None
+    school_class: str | None = None
+    jersey: str | None = None
+    blood_group: str | None = None
+    allergies: str | None = None
     photo_url: str | None = None
     fee_status: BillStatus
+    otp_verified_at: datetime | None = None
+
+
+class PlayerSignupRequest(BaseModel):
+    email: EmailStr
+    password: str
+    first_name: str
+    last_name: str = ""
+    dob: str | None = None
+    gender: str | None = None
+    mobile: str
+    emergency_contact: str | None = None
+    guardian_name: str
+    guardian_mobile: str
+    position: str | None = None
+    preferred_foot: str | None = None
+    school: str | None = None
+    school_class: str | None = None
+    jersey: str | None = None
+    blood_group: str | None = None
+    allergies: str | None = None
+
+
+class OtpRequestResponse(BaseModel):
+    message: str
+    mobile: str
+    expires_in_seconds: int
+    otp: str | None = None
+    access_token: str | None = None
+    role: UserRole | None = None
+
+
+class OtpVerifyRequest(BaseModel):
+    mobile: str
+    otp: str
+
+
+class MobileRequest(BaseModel):
+    mobile: str
+
+
+class EmailRequest(BaseModel):
+    email: EmailStr
 
 
 class BatchCreate(BaseModel):

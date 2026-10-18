@@ -44,10 +44,11 @@ Wait until the terminal prints a localhost URL and Chrome opens the login screen
 
 On that screen:
 
-1. **Continue as player** opens the player app (Home, Batches, Schedule, Profile).
-2. **Continue as coach** opens the coach app (Home, Batches, Players, Sessions, Profile).
+1. **Email sign-in** sends a password to that email. Type the password from the message, then enter the academy. **Mobile sign-in** takes the mobile number and opens the matching coach or player home.
+2. **Signup** collects player details, sends a one-time OTP, then creates the account and stores all signup data in the API database. Later logins use that email or mobile with the password (no OTP).
+3. Seeded coach login: `coach@idsports.com` or `9876543210`, password `coach123`.
 
-The email and password fields are filled with `coach@idsports.com` and `coach123`. Those two buttons do not send them to the API.
+Start the API in a second terminal before player signup or login. The OTP is texted to the mobile number. Type that message into the squares. Set `SMS_PROVIDER=twilio` and the Twilio values in `backend/.env` before a code can be sent.
 
 While `flutter run` is active:
 

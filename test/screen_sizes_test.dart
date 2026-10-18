@@ -34,9 +34,9 @@ void main() {
       expect(find.text('Skipped'), findsWidgets);
       expect(tester.takeException(), isNull);
 
-      await _tapVisible(tester, find.text('Batches'));
+      await _tapVisible(tester, find.text('Fixtures'));
       await tester.pumpAndSettle();
-      expect(find.text('Summer Camp'), findsWidgets);
+      expect(find.text('Kochi United'), findsWidgets);
 
       await _tapVisible(tester, find.text('Schedule'));
       await tester.pumpAndSettle();
@@ -53,9 +53,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text("Today's sessions"), findsOneWidget);
 
-      await _tapVisible(tester, find.text('Batches'));
+      await _tapVisible(tester, find.text('Fixtures'));
       await tester.pumpAndSettle();
-      expect(find.text('Summer Camp'), findsOneWidget);
+      expect(find.text('Academy Cup'), findsWidgets);
 
       await _tapVisible(tester, find.text('Players'));
       await tester.pumpAndSettle();

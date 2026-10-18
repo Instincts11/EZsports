@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.exceptions import ForbiddenError, UnauthorizedError
-from app.models import Accountant, Coach, SuperAdmin, User, UserRole
+from app.models import Accountant, Coach, Student, SuperAdmin, User, UserRole
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -21,6 +21,7 @@ class CurrentUser:
     admin_id: int | None = None
     accountant_id: int | None = None
     coach_id: int | None = None
+    student_id: int | None = None
 
 
 def get_current_user(
@@ -64,6 +65,13 @@ def get_current_user(
             current.coach_id = coach.coach_id
             current.admin_id = coach.admin_id
             current.academy_id = coach.super_admin.academy_id
+    elif user.role == UserRole.PLAYER:
+        student = db.query(Student).filter(Student.user_id == user.user_id).first()
+        if student:
+            current.student_id = student.student_id
+            current.admin_id = student.admin_id
+            if student.super_admin:
+                current.academy_id = student.super_admin.academy_id
 
     return current
 

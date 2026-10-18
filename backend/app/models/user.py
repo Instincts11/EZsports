@@ -12,6 +12,7 @@ from app.models.enums import UserRole
 if TYPE_CHECKING:
     from app.models.accountant import Accountant
     from app.models.coach import Coach
+    from app.models.student import Student
     from app.models.super_admin import SuperAdmin
 
 
@@ -28,3 +29,4 @@ class User(Base):
     super_admin: Mapped["SuperAdmin | None"] = relationship(back_populates="user")
     accountant: Mapped["Accountant | None"] = relationship(back_populates="user")
     coach: Mapped["Coach | None"] = relationship(back_populates="user")
+    student: Mapped["Student | None"] = relationship(back_populates="user")
