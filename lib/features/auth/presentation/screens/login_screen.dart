@@ -49,9 +49,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return '/home';
       case 'player':
         return '/player/home';
-      case 'super_admin':
-      case 'accountant':
-        return '/admin';
       default:
         return null;
     }
@@ -71,7 +68,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         final String? route = _homeForRole(result.role ?? '');
         if (route == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('This mobile is not a coach or player account.')),
+            const SnackBar(content: Text('Admin and accountant accounts sign in at http://localhost:3000')),
           );
           return;
         }
@@ -138,7 +135,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           return;
         }
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('This account cannot sign in here.')),
+          const SnackBar(content: Text('Admin and accountant accounts sign in at http://localhost:3000')),
         );
         return;
       }

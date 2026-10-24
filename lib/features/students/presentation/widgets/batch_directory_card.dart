@@ -75,6 +75,10 @@ class BatchDirectoryCard extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
                               Text(batch.days, style: AppTextStyles.body),
+                              if (batch.meetingPoint.isNotEmpty)
+                                Text('Meet at ${batch.meetingPoint}', style: AppTextStyles.body),
+                              if (batch.focus.isNotEmpty) Text(batch.focus, style: AppTextStyles.body),
+                              if (batch.kit.isNotEmpty) Text('Kit: ${batch.kit}', style: AppTextStyles.body),
                               if (batch.placeLine.isNotEmpty)
                                 Text(batch.placeLine, style: AppTextStyles.body),
                             ],

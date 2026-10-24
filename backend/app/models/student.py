@@ -39,6 +39,7 @@ class Student(Base):
     jersey: Mapped[str | None] = mapped_column(String(20), nullable=True)
     blood_group: Mapped[str | None] = mapped_column(String(20), nullable=True)
     allergies: Mapped[str | None] = mapped_column(Text, nullable=True)
+    coach_note: Mapped[str | None] = mapped_column(String(500), nullable=True)
     photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     fee_status: Mapped[BillStatus] = mapped_column(default=BillStatus.PAID)
     otp_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -3,18 +3,30 @@ from datetime import date
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.dependencies import CurrentUser
-from app.core.exceptions import ConflictError, ForbiddenError
-from app.models import Batch, Enrollment, Session as TrainingSession, SessionAssignment, UserRole
+from app.core.exceptions import AppError, ConflictError, ForbiddenError
+from app.models import (
+    Batch,
+    CoachAttendance,
+    Enrollment,
+    Match,
+    Session as TrainingSession,
+    SessionAssignment,
+    StudentAttendance,
+    UserRole,
+)
 from app.schemas import (
     AssignmentCreate,
     AssignmentMove,
     AssignmentResponse,
     BatchCreate,
     BatchResponse,
+    BatchUpdate,
     EnrollmentCreate,
     EnrollmentResponse,
+    SessionCoachBrief,
     SessionCreate,
     SessionResponse,
+    SessionUpdate,
 )
 from app.services import require_record
 
@@ -26,6 +38,9 @@ def _batch_response(batch: Batch) -> BatchResponse:
         name=batch.name,
         days=batch.days,
         sport=batch.sport,
+        meeting_point=batch.meeting_point,
+        focus=batch.focus,
+        kit=batch.kit,
         student_count=len(batch.enrollments),
     )
 
@@ -50,6 +65,36 @@ def list_batches(db: Session, current: CurrentUser) -> list[BatchResponse]:
     if current.academy_id:
         query = query.filter(Batch.academy_id == current.academy_id)
     return [_batch_response(batch) for batch in query.all()]
+
+
+def update_batch(db: Session, batch_id: int, payload: BatchUpdate) -> BatchResponse:
+    batch = require_record(
+        db.query(Batch).options(joinedload(Batch.enrollments)).filter(Batch.batch_id == batch_id).first(),
+        "Batch not found",
+    )
+    changes = payload.model_dump(exclude_unset=True)
+    if not changes:
+        raise AppError(422, "No batch changes were sent")
+    for field, value in changes.items():
+        setattr(batch, field, value)
+    db.commit()
+    db.refresh(batch)
+    return _batch_response(batch)
+
+
+def list_enrollments(db: Session, student_id: int | None = None) -> list[EnrollmentResponse]:
+    query = db.query(Enrollment).options(joinedload(Enrollment.batch))
+    if student_id is not None:
+        query = query.filter(Enrollment.student_id == student_id)
+    return [
+        EnrollmentResponse(
+            enrollment_id=row.enrollment_id,
+            batch_id=row.batch_id,
+            student_id=row.student_id,
+            batch_name=row.batch.name if row.batch is not None else None,
+        )
+        for row in query.order_by(Enrollment.enrollment_id).all()
+    ]
 
 
 def get_batch(db: Session, batch_id: int) -> BatchResponse:
@@ -94,6 +139,33 @@ def _session_response(session: TrainingSession) -> SessionResponse:
         student_count=len(session.batch.enrollments) if session.batch else 0,
         coach_count=len(session.coach_attendances),
         assigned_coach_count=len(session.assignments),
+        coaches=[
+            SessionCoachBrief(
+                assignment_id=assignment.assignment_id,
+                coach_id=assignment.coach_id,
+                coach_name=assignment.coach.name if assignment.coach is not None else None,
+            )
+            for assignment in session.assignments
+        ],
+        ground=session.ground,
+        note=session.note,
+        meeting_point=session.batch.meeting_point if session.batch else None,
+        focus=session.batch.focus if session.batch else None,
+        kit=session.batch.kit if session.batch else None,
+    )
+
+
+def _load_session(db: Session, session_id: int) -> TrainingSession:
+    return require_record(
+        db.query(TrainingSession)
+        .options(
+            joinedload(TrainingSession.batch).joinedload(Batch.enrollments),
+            joinedload(TrainingSession.assignments).joinedload(SessionAssignment.coach),
+            joinedload(TrainingSession.coach_attendances),
+        )
+        .filter(TrainingSession.session_id == session_id)
+        .first(),
+        "Session not found",
     )
 
 
@@ -104,21 +176,25 @@ def create_session(db: Session, payload: SessionCreate) -> SessionResponse:
         date=payload.date,
         start=payload.start,
         end=payload.end,
+        ground=payload.ground,
+        note=payload.note,
     )
     db.add(session)
     db.commit()
-    db.refresh(session)
-    session = (
-        db.query(TrainingSession)
-        .options(
-            joinedload(TrainingSession.batch).joinedload(Batch.enrollments),
-            joinedload(TrainingSession.assignments),
-            joinedload(TrainingSession.coach_attendances),
-        )
-        .filter(TrainingSession.session_id == session.session_id)
-        .first()
-    )
-    return _session_response(session)
+    return _session_response(_load_session(db, session.session_id))
+
+
+def update_session(db: Session, session_id: int, payload: SessionUpdate) -> SessionResponse:
+    session = require_record(db.get(TrainingSession, session_id), "Session not found")
+    changes = payload.model_dump(exclude_unset=True)
+    if not changes:
+        raise AppError(422, "No session changes were sent")
+    if "batch_id" in changes:
+        require_record(db.get(Batch, changes["batch_id"]), "Batch not found")
+    for field, value in changes.items():
+        setattr(session, field, value)
+    db.commit()
+    return _session_response(_load_session(db, session_id))
 
 
 def list_sessions(
@@ -130,7 +206,7 @@ def list_sessions(
 ) -> list[SessionResponse]:
     query = db.query(TrainingSession).options(
         joinedload(TrainingSession.batch).joinedload(Batch.enrollments),
-        joinedload(TrainingSession.assignments),
+        joinedload(TrainingSession.assignments).joinedload(SessionAssignment.coach),
         joinedload(TrainingSession.coach_attendances),
     )
     if batch_id:
@@ -146,18 +222,7 @@ def list_sessions(
 
 
 def get_session(db: Session, session_id: int) -> SessionResponse:
-    session = require_record(
-        db.query(TrainingSession)
-        .options(
-            joinedload(TrainingSession.batch).joinedload(Batch.enrollments),
-            joinedload(TrainingSession.assignments),
-            joinedload(TrainingSession.coach_attendances),
-        )
-        .filter(TrainingSession.session_id == session_id)
-        .first(),
-        "Session not found",
-    )
-    return _session_response(session)
+    return _session_response(_load_session(db, session_id))
 
 
 def assign_coach(db: Session, current: CurrentUser, payload: AssignmentCreate) -> AssignmentResponse:
@@ -202,6 +267,43 @@ def move_coach(db: Session, assignment_id: int, payload: AssignmentMove) -> Assi
         coach_name=assignment.coach.name if assignment.coach else None,
         assigned_by=assignment.assigned_by,
     )
+
+
+def delete_assignment(db: Session, assignment_id: int) -> None:
+    assignment = require_record(db.get(SessionAssignment, assignment_id), "Assignment not found")
+    db.delete(assignment)
+    db.commit()
+
+
+def _delete_session_rows(db: Session, session_id: int) -> None:
+    db.query(SessionAssignment).filter(SessionAssignment.session_id == session_id).delete(synchronize_session=False)
+    db.query(CoachAttendance).filter(CoachAttendance.session_id == session_id).delete(synchronize_session=False)
+    db.query(StudentAttendance).filter(StudentAttendance.session_id == session_id).delete(synchronize_session=False)
+    session = db.get(TrainingSession, session_id)
+    if session is not None:
+        db.delete(session)
+
+
+def delete_session(db: Session, session_id: int) -> None:
+    require_record(db.get(TrainingSession, session_id), "Session not found")
+    _delete_session_rows(db, session_id)
+    db.commit()
+
+
+def delete_batch(db: Session, batch_id: int) -> None:
+    require_record(db.get(Batch, batch_id), "Batch not found")
+    session_ids = [
+        session.session_id
+        for session in db.query(TrainingSession).filter(TrainingSession.batch_id == batch_id).all()
+    ]
+    for session_id in session_ids:
+        _delete_session_rows(db, session_id)
+    db.query(Match).filter(Match.batch_id == batch_id).delete(synchronize_session=False)
+    db.query(Enrollment).filter(Enrollment.batch_id == batch_id).delete(synchronize_session=False)
+    batch = db.get(Batch, batch_id)
+    if batch is not None:
+        db.delete(batch)
+    db.commit()
 
 
 def list_session_coaches(db: Session, session_id: int) -> list[AssignmentResponse]:

@@ -5,6 +5,8 @@ class UserModel {
     this.userId,
     this.email,
     this.name,
+    this.mobile,
+    this.academyName,
   });
 
   final String accessToken;
@@ -12,6 +14,8 @@ class UserModel {
   final int? userId;
   final String? email;
   final String? name;
+  final String? mobile;
+  final String? academyName;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
@@ -20,6 +24,8 @@ class UserModel {
       userId: json['user_id'] as int?,
       email: json['email'] as String?,
       name: json['name'] as String?,
+      mobile: json['mobile'] as String?,
+      academyName: json['academy_name'] as String?,
     );
   }
 }

@@ -5,7 +5,16 @@ from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
 from app.core.schema_migrate import ensure_runtime_schema
-from app.db.seed import seed_if_empty
+from app.db.postgres_copy import copy_sqlite_if_postgres_empty
+from app.db.seed import (
+    seed_academy_activity,
+    seed_admin_mobile,
+    seed_if_empty,
+    seed_matches_if_empty,
+    seed_more_players,
+    seed_player_account,
+    seed_profile_details,
+)
 from app import models  # noqa: F401
 
 app = FastAPI(
@@ -38,9 +47,16 @@ app.include_router(api_router, prefix="/api/v1")
 def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
     ensure_runtime_schema()
+    copy_sqlite_if_postgres_empty()
     db = SessionLocal()
     try:
         seed_if_empty(db)
+        seed_matches_if_empty(db)
+        seed_player_account(db)
+        seed_admin_mobile(db)
+        seed_more_players(db)
+        seed_academy_activity(db)
+        seed_profile_details(db)
     finally:
         db.close()
 

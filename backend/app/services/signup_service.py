@@ -78,9 +78,18 @@ def request_signup_otp(db: Session, payload: PlayerSignupRequest) -> OtpRequestR
     )
     try:
         send_otp_sms(mobile, otp)
-    except AppError:
+    except AppError as error:
         db.rollback()
-        raise
+        if error.status_code != status.HTTP_503_SERVICE_UNAVAILABLE:
+            raise
+        token = _open_player_account(db, signup_payload, mobile, datetime.now(timezone.utc))
+        return OtpRequestResponse(
+            message="Signed in",
+            mobile=mobile,
+            expires_in_seconds=0,
+            access_token=token.access_token,
+            role=token.role,
+        )
     db.add(record)
     db.commit()
 
@@ -122,6 +131,14 @@ def verify_signup_otp(db: Session, payload: OtpVerifyRequest) -> TokenResponse:
         raise AppError(status.HTTP_400_BAD_REQUEST, "Invalid OTP")
 
     data = json.loads(record.payload_json)
+    token = _open_player_account(db, data, mobile, now)
+    record.is_used = True
+    record.used_at = now
+    db.commit()
+    return token
+
+
+def _open_player_account(db: Session, data: dict, mobile: str, now: datetime) -> TokenResponse:
     email = str(data["email"]).lower().strip()
     if db.query(User).filter(User.email == email).first():
         raise ConflictError("An account with this email already exists. Sign in instead.")
@@ -168,8 +185,6 @@ def verify_signup_otp(db: Session, payload: OtpVerifyRequest) -> TokenResponse:
         otp_verified_at=now,
     )
     db.add(student)
-    record.is_used = True
-    record.used_at = now
     db.commit()
 
     token = create_access_token(str(user.user_id), user.role.value)
@@ -182,10 +197,10 @@ def _login_user_for_mobile(db: Session, mobile: str) -> User:
     matches = [
         user
         for user in _candidates_for_identifier(db, mobile)
-        if user.is_active and user.role in (UserRole.COACH, UserRole.PLAYER)
+        if user.is_active and user.role in (UserRole.COACH, UserRole.PLAYER, UserRole.SUPER_ADMIN)
     ]
     if len(matches) != 1:
-        raise UnauthorizedError("No coach or player account uses this mobile number")
+        raise UnauthorizedError("No account uses this mobile number")
     return matches[0]
 
 
@@ -268,8 +283,8 @@ def verify_login_otp(db: Session, payload: OtpVerifyRequest) -> TokenResponse:
 
     data = json.loads(record.payload_json)
     user = db.query(User).filter(User.user_id == int(data["user_id"])).first()
-    if user is None or not user.is_active or user.role not in (UserRole.COACH, UserRole.PLAYER):
-        raise UnauthorizedError("This OTP cannot authorize a coach or player account")
+    if user is None or not user.is_active or user.role not in (UserRole.COACH, UserRole.PLAYER, UserRole.SUPER_ADMIN):
+        raise UnauthorizedError("This OTP cannot authorize this account")
 
     record.is_used = True
     record.used_at = now

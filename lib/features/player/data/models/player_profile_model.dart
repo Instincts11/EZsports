@@ -18,6 +18,7 @@ class PlayerProfileModel {
     this.jersey,
     this.bloodGroup,
     this.allergies,
+    this.coachNote,
     this.photoUrl,
     this.feeStatus,
     this.otpVerifiedAt,
@@ -41,6 +42,7 @@ class PlayerProfileModel {
   final String? jersey;
   final String? bloodGroup;
   final String? allergies;
+  final String? coachNote;
   final String? photoUrl;
   final String? feeStatus;
   final String? otpVerifiedAt;
@@ -65,9 +67,55 @@ class PlayerProfileModel {
       jersey: json['jersey'] as String?,
       bloodGroup: json['blood_group'] as String?,
       allergies: json['allergies'] as String?,
+      coachNote: json['coach_note'] as String?,
       photoUrl: json['photo_url'] as String?,
       feeStatus: json['fee_status'] as String?,
       otpVerifiedAt: json['otp_verified_at']?.toString(),
+    );
+  }
+
+  PlayerProfileModel copyWith({
+    String? name,
+    String? firstName,
+    String? lastName,
+    String? dob,
+    String? gender,
+    String? mobile,
+    String? emergencyContact,
+    String? parentMobile,
+    String? guardianName,
+    String? position,
+    String? preferredFoot,
+    String? school,
+    String? schoolClass,
+    String? jersey,
+    String? bloodGroup,
+    String? allergies,
+    String? coachNote,
+  }) {
+    return PlayerProfileModel(
+      studentId: studentId,
+      userId: userId,
+      name: name ?? this.name,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      dob: dob ?? this.dob,
+      gender: gender ?? this.gender,
+      mobile: mobile ?? this.mobile,
+      emergencyContact: emergencyContact ?? this.emergencyContact,
+      parentMobile: parentMobile ?? this.parentMobile,
+      guardianName: guardianName ?? this.guardianName,
+      position: position ?? this.position,
+      preferredFoot: preferredFoot ?? this.preferredFoot,
+      school: school ?? this.school,
+      schoolClass: schoolClass ?? this.schoolClass,
+      jersey: jersey ?? this.jersey,
+      bloodGroup: bloodGroup ?? this.bloodGroup,
+      allergies: allergies ?? this.allergies,
+      coachNote: coachNote ?? this.coachNote,
+      photoUrl: photoUrl,
+      feeStatus: feeStatus,
+      otpVerifiedAt: otpVerifiedAt,
     );
   }
 

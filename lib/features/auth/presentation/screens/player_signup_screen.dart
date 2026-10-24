@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:ezsports/core/auth/auth_session.dart';
 import 'package:ezsports/core/constants/app_colors.dart';
 import 'package:ezsports/core/constants/app_icons.dart';
 import 'package:ezsports/core/constants/app_sizes.dart';
@@ -103,6 +104,15 @@ class _PlayerSignupScreenState extends ConsumerState<PlayerSignupScreen> {
         },
       );
       if (!mounted) {
+        return;
+      }
+      final String? token = result.accessToken;
+      if (token != null && token.isNotEmpty) {
+        await AuthSession.save(token: token, role: result.role ?? 'player');
+        if (!mounted) {
+          return;
+        }
+        context.go('/player/home');
         return;
       }
       context.push(

@@ -3,22 +3,26 @@ from datetime import date
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.dependencies import CurrentUser
-from app.core.exceptions import ForbiddenError, NotFoundError
+from app.core.exceptions import AppError, ForbiddenError, NotFoundError
 from app.models import (
+    Coach,
     CoachAttendance,
     Enrollment,
     Leave,
+    PlayerSessionResponse,
     Session as TrainingSession,
+    SessionAssignment,
     Student,
     StudentAttendance,
 )
-from app.models.enums import AttendanceStatus
+from app.models.enums import AttendanceStatus, UserRole
 from app.schemas import (
     AttendanceMark,
     AttendanceSummary,
     CoachAttendanceResponse,
     LeaveCreate,
     LeaveResponse,
+    LeaveUpdate,
     SessionRosterStudent,
     StudentAttendanceMark,
     StudentAttendanceResponse,
@@ -59,14 +63,27 @@ def list_coach_attendance(db: Session, session_id: int) -> list[CoachAttendanceR
     return [CoachAttendanceResponse.model_validate(row) for row in rows]
 
 
+def _marker_coach_id(db: Session, current: CurrentUser, session_id: int) -> int:
+    if current.coach_id is not None:
+        return current.coach_id
+    if current.role != UserRole.SUPER_ADMIN:
+        raise ForbiddenError("Only a coach can mark student attendance")
+    assignment = db.query(SessionAssignment).filter(SessionAssignment.session_id == session_id).first()
+    if assignment is not None:
+        return assignment.coach_id
+    coach = db.query(Coach).first()
+    if coach is None:
+        raise ForbiddenError("Assign a coach before marking attendance")
+    return coach.coach_id
+
+
 def mark_student_attendance(
     db: Session,
     current: CurrentUser,
     session_id: int,
     payload: StudentAttendanceMark,
 ) -> StudentAttendanceResponse:
-    if current.coach_id is None:
-        raise ForbiddenError("Only a coach can mark student attendance")
+    marker_id = _marker_coach_id(db, current, session_id)
     require_record(db.get(TrainingSession, session_id), "Session not found")
     require_record(db.get(Student, payload.student_id), "Student not found")
     record = (
@@ -79,12 +96,12 @@ def mark_student_attendance(
     )
     if record:
         record.status = payload.status
-        record.marked_by_coach_id = current.coach_id
+        record.marked_by_coach_id = marker_id
     else:
         record = StudentAttendance(
             session_id=session_id,
             student_id=payload.student_id,
-            marked_by_coach_id=current.coach_id,
+            marked_by_coach_id=marker_id,
             status=payload.status,
         )
         db.add(record)
@@ -108,6 +125,10 @@ def session_roster(db: Session, session_id: int) -> list[SessionRosterStudent]:
         row.student_id: row.status
         for row in db.query(StudentAttendance).filter(StudentAttendance.session_id == session_id).all()
     }
+    responses = {
+        row.student_id: row
+        for row in db.query(PlayerSessionResponse).filter(PlayerSessionResponse.session_id == session_id).all()
+    }
     return [
         SessionRosterStudent(
             student_id=item.student.student_id,
@@ -115,6 +136,8 @@ def session_roster(db: Session, session_id: int) -> list[SessionRosterStudent]:
             photo_url=item.student.photo_url,
             fee_status=item.student.fee_status,
             attendance_status=attendance_map.get(item.student.student_id),
+            checked_in=bool(responses.get(item.student.student_id) and responses[item.student.student_id].checked_in),
+            skip_reason=responses[item.student.student_id].skip_reason if item.student.student_id in responses else None,
         )
         for item in enrollments
     ]
@@ -146,6 +169,18 @@ def create_leave(db: Session, current: CurrentUser, payload: LeaveCreate) -> Lea
         reason=payload.reason,
     )
     db.add(leave)
+    db.commit()
+    db.refresh(leave)
+    return LeaveResponse.model_validate(leave)
+
+
+def update_leave(db: Session, leave_id: int, payload: LeaveUpdate) -> LeaveResponse:
+    leave = require_record(db.get(Leave, leave_id), "Leave not found")
+    changes = payload.model_dump(exclude_unset=True)
+    if not changes:
+        raise AppError(422, "No leave changes were sent")
+    for field, value in changes.items():
+        setattr(leave, field, value)
     db.commit()
     db.refresh(leave)
     return LeaveResponse.model_validate(leave)

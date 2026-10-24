@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import ConflictError, NotFoundError, UnauthorizedError
 from app.core.security import create_access_token, hash_password, verify_password
-from app.models import Accountant, Coach, Student, SuperAdmin, User, UserRole
+from app.models import Academy, Accountant, Coach, Student, SuperAdmin, User, UserRole
 from app.schemas import LoginRequest, MeResponse, TokenResponse
 
 _APP_ROLES = (UserRole.COACH, UserRole.PLAYER, UserRole.SUPER_ADMIN, UserRole.ACCOUNTANT)
@@ -31,13 +31,14 @@ def _candidates_for_identifier(db: Session, identifier: str) -> list[User]:
         return []
 
     matches: list[User] = []
+    admins = db.query(SuperAdmin).filter(func.substr(SuperAdmin.mobile, -10) == mobile).all()
     coaches = db.query(Coach).filter(func.substr(Coach.mobile, -10) == mobile).all()
     students = (
         db.query(Student)
         .filter(Student.user_id.isnot(None), func.substr(Student.mobile, -10) == mobile)
         .all()
     )
-    for record in (*coaches, *students):
+    for record in (*admins, *coaches, *students):
         user = record.user
         if user is not None and all(existing.user_id != user.user_id for existing in matches):
             matches.append(user)
@@ -74,6 +75,8 @@ def authenticate(db: Session, payload: LoginRequest) -> TokenResponse:
 
 def get_me(db: Session, user: User) -> MeResponse:
     name = None
+    mobile = None
+    academy_name = None
     academy_id = None
     admin_id = None
     accountant_id = None
@@ -82,6 +85,7 @@ def get_me(db: Session, user: User) -> MeResponse:
 
     if user.role == UserRole.SUPER_ADMIN and user.super_admin:
         name = user.super_admin.name
+        mobile = user.super_admin.mobile
         academy_id = user.super_admin.academy_id
         admin_id = user.super_admin.admin_id
     elif user.role == UserRole.ACCOUNTANT and user.accountant:
@@ -103,11 +107,17 @@ def get_me(db: Session, user: User) -> MeResponse:
             if student.super_admin:
                 academy_id = student.super_admin.academy_id
 
+    if academy_id is not None:
+        academy = db.get(Academy, academy_id)
+        academy_name = academy.name if academy is not None else None
+
     return MeResponse(
         user_id=user.user_id,
         email=user.email,
         role=user.role,
         name=name,
+        mobile=mobile,
+        academy_name=academy_name,
         academy_id=academy_id,
         admin_id=admin_id,
         accountant_id=accountant_id,

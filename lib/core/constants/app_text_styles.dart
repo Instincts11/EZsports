@@ -16,9 +16,9 @@ final class AppTextStyles {
     color: AppColors.primary,
   );
   static const TextStyle pageTitle = TextStyle(
-    fontSize: 42,
+    fontSize: 28,
     fontWeight: FontWeight.w600,
-    height: 1.05,
+    height: 1.1,
     color: AppColors.textOnDark,
     fontFamily: 'serif',
   );
@@ -94,7 +94,7 @@ final class AppTextStyles {
   );
   static const TextStyle displayName = TextStyle(
     fontFamily: 'serif',
-    fontSize: 34,
+    fontSize: 26,
     fontWeight: FontWeight.w500,
     height: 1.1,
     color: AppColors.textOnDark,

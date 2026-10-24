@@ -3,7 +3,10 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user
+from app.core.exceptions import AppError
+from app.core.security import hash_password, verify_password
 from app.schemas import (
+    ChangePasswordRequest,
     EmailRequest,
     LoginRequest,
     MeResponse,
@@ -89,3 +92,22 @@ def login_verify_otp(payload: OtpVerifyRequest, db: Session = Depends(get_db)) -
 def me(current: CurrentUser = Depends(get_current_user), db: Session = Depends(get_db)) -> MeResponse:
     """Requires `Authorization: Bearer <access_token>` from POST /api/v1/auth/login."""
     return get_me(db, current.user)
+
+
+@router.post(
+    "/change-password",
+    response_model=MessageResponse,
+    summary="Change the signed-in user's password",
+)
+def change_password(
+    payload: ChangePasswordRequest,
+    current: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    if not verify_password(payload.current_password, current.user.password_hash):
+        raise AppError(400, "Current password is incorrect")
+    if len(payload.new_password) < 6:
+        raise AppError(400, "New password must be at least 6 characters")
+    current.user.password_hash = hash_password(payload.new_password)
+    db.commit()
+    return MessageResponse(message="Password updated")

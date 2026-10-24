@@ -23,6 +23,7 @@ class SuperAdmin(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"), unique=True)
     academy_id: Mapped[int] = mapped_column(ForeignKey("academies.academy_id"))
     name: Mapped[str] = mapped_column(String(255))
+    mobile: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="super_admin")
     academy: Mapped["Academy"] = relationship(back_populates="super_admins")

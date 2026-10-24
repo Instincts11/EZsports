@@ -9,8 +9,10 @@ final class AppIcons {
   static const IconData sessions = Icons.calendar_month_rounded;
   static const IconData profile = Icons.person_rounded;
   static const IconData calendar = Icons.calendar_today_outlined;
+  static const IconData notifications = Icons.notifications_none_rounded;
   static const IconData search = Icons.search_rounded;
   static const IconData clock = Icons.schedule_rounded;
+  static const IconData location = Icons.place_outlined;
   static const IconData people = Icons.groups_rounded;
   static const IconData chevron = Icons.chevron_right_rounded;
   static const IconData back = Icons.arrow_back_rounded;

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, time
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, ForeignKey, Time
+from sqlalchemy import Date, ForeignKey, String, Time
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -23,6 +23,8 @@ class Session(Base):
     date: Mapped[date] = mapped_column(Date, index=True)
     start: Mapped[time] = mapped_column(Time)
     end: Mapped[time] = mapped_column(Time)
+    ground: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    note: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     batch: Mapped["Batch"] = relationship(back_populates="sessions")
     assignments: Mapped[list["SessionAssignment"]] = relationship(back_populates="session")

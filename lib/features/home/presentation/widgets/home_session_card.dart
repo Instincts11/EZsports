@@ -25,6 +25,26 @@ class HomeSessionCard extends StatelessWidget {
                 _IconRow(icon: AppIcons.calendar, text: session.dateLabel),
                 const SizedBox(height: 12),
                 _IconRow(icon: AppIcons.clock, text: session.timeRange, subtitle: session.batchName),
+                if (session.ground.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 12),
+                  _IconRow(icon: AppIcons.location, text: session.ground),
+                ],
+                if (session.note.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 8),
+                  Text(session.note, style: AppTextStyles.body),
+                ],
+                if (session.meetingPoint.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 8),
+                  Text('Meet at ${session.meetingPoint}', style: AppTextStyles.muted),
+                ],
+                if (session.focus.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 4),
+                  Text(session.focus, style: AppTextStyles.body),
+                ],
+                if (session.kit.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 4),
+                  Text('Kit: ${session.kit}', style: AppTextStyles.muted),
+                ],
               ],
             ),
           ),

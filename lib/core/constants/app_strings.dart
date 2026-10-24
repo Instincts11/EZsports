@@ -2,7 +2,7 @@ final class AppStrings {
   AppStrings._();
 
   static const String appName = 'ID SPORTS COACH';
-  static const String academyName = 'Esperanza Football Academy';
+  static const String academyName = 'ID Sports Academy';
   static const String loginTitle = 'ID SPORTS';
   static const String loginAction = 'Enter academy';
   static const String signUpAsPlayer = 'Signup';
@@ -57,8 +57,4 @@ final class AppStrings {
   static const String mobile = 'Mobile';
   static const String emergency = 'Emergency';
   static const String academy = 'Academy';
-  static const String dateRange = '06 Sep 2026 - 15 Sep 2026';
-  static const String todayDate = '06 Sep 2026 Sunday';
-  static const String attendanceSubtitle = '06 Sep Sunday · 3:30 PM to 5:00 PM · 15 players';
-  static const String attendanceThisMonth = 'Attendance this month';
 }

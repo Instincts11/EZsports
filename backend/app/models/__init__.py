@@ -9,6 +9,7 @@ from app.models.enums import AttendanceStatus, BillStatus, LeaveStatus, MatchSta
 from app.models.leave import Leave
 from app.models.match import Match
 from app.models.otp_code import OtpCode
+from app.models.player_session_response import PlayerSessionResponse
 from app.models.session import Session
 from app.models.session_assignment import SessionAssignment
 from app.models.student import Student
@@ -31,6 +32,7 @@ __all__ = [
     "Match",
     "MatchStatus",
     "OtpCode",
+    "PlayerSessionResponse",
     "Session",
     "SessionAssignment",
     "Student",

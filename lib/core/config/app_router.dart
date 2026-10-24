@@ -1,6 +1,5 @@
 import 'package:ezsports/core/widgets/coach_shell.dart';
 import 'package:ezsports/core/widgets/player_shell.dart';
-import 'package:ezsports/features/admin/presentation/screens/admin_home_screen.dart';
 import 'package:ezsports/features/attendance/presentation/screens/student_attendance_screen.dart';
 import 'package:ezsports/features/auth/presentation/screens/login_screen.dart';
 import 'package:ezsports/features/auth/presentation/screens/otp_verify_screen.dart';
@@ -33,10 +32,6 @@ final class AppRouter {
       GoRoute(
         path: '/login',
         builder: (BuildContext context, GoRouterState state) => const LoginScreen(),
-      ),
-      GoRoute(
-        path: '/admin',
-        builder: (BuildContext context, GoRouterState state) => const AdminHomeScreen(),
       ),
       GoRoute(
         path: '/signup',

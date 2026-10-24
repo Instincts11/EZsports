@@ -7,9 +7,9 @@ from app.core.database import get_db
 from app.core.dependencies import CurrentUser, require_roles
 from app.core.exceptions import ForbiddenError
 from app.models.enums import UserRole
-from app.schemas import HomeDashboardResponse, LeaveCreate, LeaveResponse, MatchCreate, MatchResponse
-from app.services.attendance_service import create_leave, list_leaves
-from app.services.home_service import create_match, get_home_dashboard, get_match, list_matches
+from app.schemas import HomeDashboardResponse, LeaveCreate, LeaveResponse, LeaveUpdate, MatchCreate, MatchResponse, MatchUpdate, MessageResponse
+from app.services.attendance_service import create_leave, list_leaves, update_leave
+from app.services.home_service import create_match, delete_match, get_home_dashboard, get_match, list_matches, update_match
 from app.services.people_service import get_coach, update_coach
 from app.schemas import CoachResponse, CoachUpdate
 
@@ -41,6 +41,26 @@ def add_match(
     _: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN, UserRole.COACH)),
 ) -> MatchResponse:
     return create_match(db, payload)
+
+
+@router.patch("/matches/{match_id}", response_model=MatchResponse)
+def edit_match(
+    match_id: int,
+    payload: MatchUpdate,
+    db: Session = Depends(get_db),
+    _: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN)),
+) -> MatchResponse:
+    return update_match(db, match_id, payload)
+
+
+@router.delete("/matches/{match_id}", response_model=MessageResponse)
+def remove_match(
+    match_id: int,
+    db: Session = Depends(get_db),
+    _: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN)),
+) -> MessageResponse:
+    delete_match(db, match_id)
+    return MessageResponse(message="Fixture deleted")
 
 
 @router.get("/matches/{match_id}", response_model=MatchResponse)
@@ -79,6 +99,16 @@ def read_leaves(
     current: CurrentUser = Depends(require_roles(UserRole.COACH, UserRole.SUPER_ADMIN)),
 ) -> list[LeaveResponse]:
     return list_leaves(db, current)
+
+
+@router.patch("/leaves/{leave_id}", response_model=LeaveResponse)
+def edit_leave(
+    leave_id: int,
+    payload: LeaveUpdate,
+    db: Session = Depends(get_db),
+    _: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN)),
+) -> LeaveResponse:
+    return update_leave(db, leave_id, payload)
 
 
 @router.post("/leaves", response_model=LeaveResponse)

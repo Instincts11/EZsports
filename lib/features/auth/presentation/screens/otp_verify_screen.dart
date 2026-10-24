@@ -120,7 +120,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
           return;
         }
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('This code is not for a coach or player account.')),
+          const SnackBar(content: Text('Admin and accountant accounts sign in at http://localhost:3000')),
         );
         return;
       }

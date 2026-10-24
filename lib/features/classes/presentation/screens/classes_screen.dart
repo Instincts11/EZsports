@@ -3,7 +3,6 @@ import 'package:ezsports/core/constants/app_icons.dart';
 import 'package:ezsports/core/constants/app_sizes.dart';
 import 'package:ezsports/core/constants/app_strings.dart';
 import 'package:ezsports/core/constants/app_text_styles.dart';
-import 'package:ezsports/core/widgets/cream_card.dart';
 import 'package:ezsports/features/classes/data/models/session_model.dart';
 import 'package:ezsports/features/classes/presentation/widgets/class_session_card.dart';
 import 'package:ezsports/features/classes/providers/classes_providers.dart';
@@ -17,10 +16,7 @@ class ClassesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final String filter = ref.watch(sessionFilterProvider);
-    final List<SessionModel> sessions = ref
-        .watch(demoSessionsProvider)
-        .where((SessionModel session) => session.status == filter)
-        .toList();
+    final AsyncValue<List<SessionModel>> sessionsAsync = ref.watch(sessionsProvider);
 
     return SafeArea(
       bottom: false,
@@ -40,12 +36,12 @@ class ClassesScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: AppColors.primary),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Icon(AppIcons.calendar, size: 16, color: AppColors.primary),
-                    SizedBox(width: 8),
-                    Text(AppStrings.dateRange, style: AppTextStyles.bodyOnDark),
+                    const Icon(AppIcons.calendar, size: 16, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Text(_sessionRange(sessionsAsync.asData?.value ?? const <SessionModel>[]), style: AppTextStyles.bodyOnDark),
                   ],
                 ),
               ),
@@ -77,34 +73,60 @@ class ClassesScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          if (sessions.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(top: 12),
-              child: Text('Nothing in this view for the selected range.', style: AppTextStyles.muted),
-            )
-          else
-            ...sessions.map(
-              (SessionModel session) => ClassSessionCard(
-                session: session,
-                onViewPlayers: () => context.go('/sessions/${session.sessionId}/attendance'),
-              ),
+          sessionsAsync.when(
+            data: (List<SessionModel> all) {
+              final List<SessionModel> sessions =
+                  all.where((SessionModel session) => session.status == filter).toList();
+              if (sessions.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    filter == 'upcoming'
+                        ? 'No upcoming sessions. Open Previous for earlier ones.'
+                        : 'Nothing in this view.',
+                    style: AppTextStyles.muted,
+                  ),
+                );
+              }
+              return Column(
+                children: sessions
+                    .map(
+                      (SessionModel session) => ClassSessionCard(
+                        session: session,
+                        onViewPlayers: () => context.go('/sessions/${session.sessionId}/attendance'),
+                      ),
+                    )
+                    .toList(),
+              );
+            },
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
             ),
-          if (filter == 'upcoming' && sessions.isNotEmpty) ...<Widget>[
-            const CreamCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text('End of this range · 06 Sep – 15 Sep', style: AppTextStyles.title),
-                  SizedBox(height: 4),
-                  Text('Next range starts 16 Sep', style: AppTextStyles.muted),
-                ],
-              ),
+            error: (Object error, StackTrace stack) => const Text(
+              'Sign in as a coach to load sessions.',
+              style: AppTextStyles.muted,
             ),
-          ],
+          ),
         ],
       ),
     );
   }
+}
+
+String _sessionRange(List<SessionModel> sessions) {
+  final List<DateTime> dates = sessions.map((SessionModel session) => session.date).whereType<DateTime>().toList()..sort();
+  if (dates.isEmpty) {
+    return 'No sessions on file';
+  }
+  const List<String> months = <String>['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  String label(DateTime date) => '${date.day} ${months[date.month - 1]} ${date.year}';
+  final DateTime first = dates.first;
+  final DateTime last = dates.last;
+  if (first.year == last.year && first.month == last.month && first.day == last.day) {
+    return label(first);
+  }
+  return '${label(first)} - ${label(last)}';
 }
 
 class _FilterChip extends StatelessWidget {

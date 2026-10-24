@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, require_roles
 from app.models.enums import UserRole
-from app.schemas import CoachCreate, CoachResponse, CoachUpdate
-from app.services.people_service import create_coach, get_coach, list_coaches, update_coach
+from app.schemas import CoachCreate, CoachResponse, CoachUpdate, MessageResponse
+from app.services.people_service import create_coach, delete_coach, get_coach, list_coaches, update_coach
 
 router = APIRouter(prefix="/coaches", tags=["Coaches"])
 
@@ -22,16 +22,26 @@ def add_coach(
 @router.get("", response_model=list[CoachResponse])
 def read_coaches(
     db: Session = Depends(get_db),
-    current: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN, UserRole.COACH)),
+    current: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN, UserRole.COACH, UserRole.ACCOUNTANT)),
 ) -> list[CoachResponse]:
     return list_coaches(db, current)
+
+
+@router.delete("/{coach_id}", response_model=MessageResponse)
+def remove_coach(
+    coach_id: int,
+    db: Session = Depends(get_db),
+    _: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN)),
+) -> MessageResponse:
+    delete_coach(db, coach_id)
+    return MessageResponse(message="Coach deleted")
 
 
 @router.get("/{coach_id}", response_model=CoachResponse)
 def read_coach(
     coach_id: int,
     db: Session = Depends(get_db),
-    _: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN, UserRole.COACH)),
+    _: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN, UserRole.COACH, UserRole.ACCOUNTANT)),
 ) -> CoachResponse:
     return get_coach(db, coach_id)
 

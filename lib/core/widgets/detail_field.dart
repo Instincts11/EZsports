@@ -12,6 +12,7 @@ class DetailField extends StatelessWidget {
     this.keyboardType,
     this.accent = AppColors.primary,
     this.maxLines = 1,
+    this.obscure = false,
   });
 
   final String label;
@@ -20,6 +21,7 @@ class DetailField extends StatelessWidget {
   final TextInputType? keyboardType;
   final Color accent;
   final int maxLines;
+  final bool obscure;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +35,8 @@ class DetailField extends StatelessWidget {
           TextField(
             controller: controller,
             keyboardType: keyboardType,
-            maxLines: maxLines,
+            maxLines: obscure ? 1 : maxLines,
+            obscureText: obscure,
             style: const TextStyle(color: AppColors.playerInk, fontWeight: FontWeight.w600),
             cursorColor: accent,
             inputFormatters: keyboardType == TextInputType.phone

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
 if TYPE_CHECKING:
+    from app.models.bill import Bill
     from app.models.coach_attendance import CoachAttendance
     from app.models.leave import Leave
     from app.models.session_assignment import SessionAssignment
@@ -30,6 +31,7 @@ class Coach(Base):
     emergency_contact: Mapped[str | None] = mapped_column(String(20), nullable=True)
     certifications: Mapped[str | None] = mapped_column(Text, nullable=True)
     experience: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    headline: Mapped[str | None] = mapped_column(String(255), nullable=True)
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
     photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
@@ -39,3 +41,4 @@ class Coach(Base):
     attendances: Mapped[list["CoachAttendance"]] = relationship(back_populates="coach")
     marked_student_attendances: Mapped[list["StudentAttendance"]] = relationship(back_populates="marked_by_coach")
     leaves: Mapped[list["Leave"]] = relationship(back_populates="coach")
+    bills: Mapped[list["Bill"]] = relationship(back_populates="coach")

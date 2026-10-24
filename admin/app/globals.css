@@ -1,0 +1,162 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #12110f;
+  --rail: #1a1612;
+  --cream: #f6ede0;
+  --card: #fffaf4;
+  --terracotta: #c05636;
+  --terracotta-dark: #a8482c;
+  --ink-text: #1a1a1a;
+  --cream-text: #f4eee6;
+  --muted: #9a9086;
+  --line: #e4d6c4;
+  --teal: #1db8a6;
+  --success: #2e7d32;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-rail: var(--rail);
+  --color-cream: var(--cream);
+  --color-card: var(--card);
+  --color-terracotta: var(--terracotta);
+  --color-terracotta-dark: var(--terracotta-dark);
+  --color-ink-text: var(--ink-text);
+  --color-cream-text: var(--cream-text);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-teal: var(--teal);
+  --color-success: var(--success);
+  --font-sans: var(--font-geist-sans), sans-serif;
+  --font-serif: var(--font-source-serif), "Times New Roman", serif;
+}
+
+body {
+  background: var(--ink);
+  color: var(--ink-text);
+}
+
+@media (min-width: 1025px) {
+  .desk-rail {
+    /* 0px at 1025px wide, 1px at 1820px wide */
+    --rail-grow: calc((100vw - 1025px) / 795);
+    --text-xs: clamp(12px, calc(12px + 1 * var(--rail-grow)), 13px);
+    --text-sm: clamp(15px, calc(15px + 1 * var(--rail-grow)), 16px);
+    width: clamp(240px, calc(240px + 20 * var(--rail-grow)), 260px);
+  }
+
+  .desk-rail svg {
+    width: clamp(18px, calc(18px + 2 * var(--rail-grow)), 20px);
+    height: clamp(18px, calc(18px + 2 * var(--rail-grow)), 20px);
+  }
+}
+
+@media (min-width: 1300px) {
+  .desk {
+    font-size: var(--text-base);
+    --text-xs: 13px;
+    --text-sm: 15px;
+    --text-base: 16px;
+    --text-lg: 18px;
+    --text-xl: 21px;
+    --text-2xl: 24px;
+    --text-3xl: 30px;
+    --text-4xl: 36px;
+  }
+
+  .person-list {
+    width: 380px;
+  }
+
+  .person-avatar {
+    width: 2.5em;
+    height: 2.5em;
+  }
+}
+
+@media (min-width: 1923px) {
+  .desk {
+    /* 0px at 1922px wide, 1px at 2560px wide */
+    --grow: calc((100vw - 1922px) / 638);
+    --text-xs: clamp(13px, calc(13px + 13 * var(--grow)), 26px);
+    --text-sm: clamp(15px, calc(15px + 17 * var(--grow)), 32px);
+    --text-base: clamp(16px, calc(16px + 18 * var(--grow)), 34px);
+    --text-lg: clamp(18px, calc(18px + 18 * var(--grow)), 36px);
+    --text-xl: clamp(21px, calc(21px + 27 * var(--grow)), 48px);
+    --text-2xl: clamp(24px, calc(24px + 28 * var(--grow)), 52px);
+    --text-3xl: clamp(30px, calc(30px + 36 * var(--grow)), 66px);
+    --text-4xl: clamp(36px, calc(36px + 44 * var(--grow)), 80px);
+  }
+
+  .desk-rail {
+    --text-xs: clamp(13px, calc(13px + 13 * var(--grow)), 26px);
+    --text-sm: clamp(16px, calc(16px + 18 * var(--grow)), 34px);
+    width: clamp(260px, calc(260px + 160 * var(--grow)), 420px);
+  }
+
+  .desk-rail svg {
+    width: clamp(20px, calc(20px + 12 * var(--grow)), 32px);
+    height: clamp(20px, calc(20px + 12 * var(--grow)), 32px);
+  }
+
+  .person-list {
+    width: clamp(380px, calc(380px + 300 * var(--grow)), 680px);
+  }
+}
+
+@media (min-width: 1920px) {
+  .desk-content .rounded-2xl {
+    --spacing: 0.3125rem;
+  }
+}
+
+@media (min-width: 1300px) {
+  .date-card {
+    zoom: 1.35;
+  }
+}
+
+@media (min-width: 1600px) {
+  .date-card {
+    zoom: 1.5;
+  }
+}
+
+@media (min-width: 1930px) {
+  .date-card {
+    zoom: 1.7;
+  }
+}
+
+@media (min-width: 2100px) {
+  .date-card {
+    zoom: 1.8;
+  }
+}
+
+@media (min-width: 2300px) {
+  .date-card {
+    zoom: 1.95;
+  }
+}
+
+@media (min-width: 2500px) {
+  .date-card {
+    zoom: 2.1;
+  }
+}
+
+@media (min-width: 1300px) and (max-height: 760px) {
+  .date-card {
+    zoom: 1.1;
+  }
+}
+
+@media (max-width: 500px) {
+  h1.font-serif,
+  h2.font-serif {
+    font-size: 1.5rem;
+    line-height: 1.75rem;
+  }
+}

@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, require_roles
 from app.models.enums import UserRole
-from app.schemas import StudentCreate, StudentResponse, StudentUpdate
-from app.services.people_service import create_student, get_student, list_students, update_student
+from app.schemas import MessageResponse, StudentCreate, StudentResponse, StudentUpdate
+from app.services.people_service import create_student, delete_student, get_student, list_students, update_student
 
 router = APIRouter(prefix="/students", tags=["Students"])
 
@@ -26,6 +26,16 @@ def read_students(
     current: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN, UserRole.COACH, UserRole.ACCOUNTANT)),
 ) -> list[StudentResponse]:
     return list_students(db, current, batch_id)
+
+
+@router.delete("/{student_id}", response_model=MessageResponse)
+def remove_student(
+    student_id: int,
+    db: Session = Depends(get_db),
+    _: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN)),
+) -> MessageResponse:
+    delete_student(db, student_id)
+    return MessageResponse(message="Player deleted")
 
 
 @router.get("/{student_id}", response_model=StudentResponse)

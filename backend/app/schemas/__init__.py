@@ -1,7 +1,10 @@
 from datetime import date, datetime, time
+
+DateValue = date
+TimeValue = time
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, model_validator
 
 from app.models.enums import AttendanceStatus, BillStatus, LeaveStatus, MatchStatus, UserRole
 
@@ -32,6 +35,8 @@ class MeResponse(ORMModel):
     email: EmailStr
     role: UserRole
     name: str | None = None
+    mobile: str | None = None
+    academy_name: str | None = None
     academy_id: int | None = None
     admin_id: int | None = None
     accountant_id: int | None = None
@@ -48,6 +53,21 @@ class AcademyResponse(ORMModel):
     academy_id: int
     name: str
     sport: str
+    notice: str | None = None
+    phone: str | None = None
+    address: str | None = None
+    range_start: DateValue | None = None
+    range_end: DateValue | None = None
+
+
+class AcademyUpdate(BaseModel):
+    name: str | None = None
+    sport: str | None = None
+    notice: str | None = None
+    phone: str | None = None
+    address: str | None = None
+    range_start: DateValue | None = None
+    range_end: DateValue | None = None
 
 
 class AccountantCreate(BaseModel):
@@ -56,12 +76,26 @@ class AccountantCreate(BaseModel):
     password: str
 
 
+class AccountantUpdate(BaseModel):
+    name: str | None = None
+    email: EmailStr | None = None
+    password: str | None = None
+
+
 class AccountantResponse(ORMModel):
     accountant_id: int
     admin_id: int
     name: str
     email: EmailStr | None = None
     assigned_at: datetime | None = None
+
+
+class SuperAdminResponse(ORMModel):
+    admin_id: int
+    name: str
+    email: EmailStr | None = None
+    mobile: str | None = None
+    academy_name: str | None = None
 
 
 class CoachCreate(BaseModel):
@@ -76,10 +110,12 @@ class CoachCreate(BaseModel):
     experience: str | None = None
     address: str | None = None
     photo_url: str | None = None
+    headline: str | None = None
 
 
 class CoachUpdate(BaseModel):
     name: str | None = None
+    email: EmailStr | None = None
     mobile: str | None = None
     dob: date | None = None
     gender: str | None = None
@@ -88,6 +124,8 @@ class CoachUpdate(BaseModel):
     experience: str | None = None
     address: str | None = None
     photo_url: str | None = None
+    headline: str | None = None
+    password: str | None = None
 
 
 class CoachResponse(ORMModel):
@@ -102,6 +140,7 @@ class CoachResponse(ORMModel):
     experience: str | None = None
     address: str | None = None
     photo_url: str | None = None
+    headline: str | None = None
     email: EmailStr | None = None
 
 
@@ -109,6 +148,23 @@ class StudentCreate(BaseModel):
     name: str
     parent_mobile: str
     photo_url: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    dob: str | None = None
+    gender: str | None = None
+    mobile: str | None = None
+    emergency_contact: str | None = None
+    guardian_name: str | None = None
+    position: str | None = None
+    preferred_foot: str | None = None
+    school: str | None = None
+    school_class: str | None = None
+    jersey: str | None = None
+    blood_group: str | None = None
+    allergies: str | None = None
+    coach_note: str | None = None
+    email: EmailStr | None = None
+    password: str | None = None
 
 
 class StudentUpdate(BaseModel):
@@ -129,12 +185,22 @@ class StudentUpdate(BaseModel):
     blood_group: str | None = None
     allergies: str | None = None
     photo_url: str | None = None
+    email: EmailStr | None = None
+    password: str | None = None
+    coach_note: str | None = None
+
+
+class StudentAttendanceBrief(BaseModel):
+    date: date
+    batch_name: str | None = None
+    status: AttendanceStatus
 
 
 class StudentResponse(ORMModel):
     student_id: int
     admin_id: int
     user_id: int | None = None
+    email: EmailStr | None = None
     name: str
     first_name: str | None = None
     last_name: str | None = None
@@ -152,7 +218,15 @@ class StudentResponse(ORMModel):
     blood_group: str | None = None
     allergies: str | None = None
     photo_url: str | None = None
+    coach_note: str | None = None
     fee_status: BillStatus
+    batch_name: str | None = None
+    attended: int = 0
+    total_sessions: int = 0
+    bill_amount: Decimal | None = None
+    bill_due_date: date | None = None
+    bill_status: BillStatus | None = None
+    attendance_marks: list[StudentAttendanceBrief] = []
     otp_verified_at: datetime | None = None
 
 
@@ -204,12 +278,24 @@ class BatchCreate(BaseModel):
     sport: str
 
 
+class BatchUpdate(BaseModel):
+    name: str | None = None
+    days: str | None = None
+    sport: str | None = None
+    meeting_point: str | None = None
+    focus: str | None = None
+    kit: str | None = None
+
+
 class BatchResponse(ORMModel):
     batch_id: int
     academy_id: int
     name: str
     days: str
     sport: str
+    meeting_point: str | None = None
+    focus: str | None = None
+    kit: str | None = None
     student_count: int = 0
 
 
@@ -222,6 +308,7 @@ class EnrollmentResponse(ORMModel):
     enrollment_id: int
     batch_id: int
     student_id: int
+    batch_name: str | None = None
 
 
 class SessionCreate(BaseModel):
@@ -229,6 +316,23 @@ class SessionCreate(BaseModel):
     date: date
     start: time
     end: time
+    ground: str | None = None
+    note: str | None = None
+
+
+class SessionUpdate(BaseModel):
+    batch_id: int | None = None
+    date: DateValue | None = None
+    start: TimeValue | None = None
+    end: TimeValue | None = None
+    ground: str | None = None
+    note: str | None = None
+
+
+class SessionCoachBrief(BaseModel):
+    assignment_id: int
+    coach_id: int
+    coach_name: str | None = None
 
 
 class SessionResponse(ORMModel):
@@ -241,6 +345,14 @@ class SessionResponse(ORMModel):
     student_count: int = 0
     coach_count: int = 0
     assigned_coach_count: int = 0
+    coaches: list[SessionCoachBrief] = []
+    ground: str | None = None
+    note: str | None = None
+    meeting_point: str | None = None
+    focus: str | None = None
+    kit: str | None = None
+    my_attendance_status: AttendanceStatus | None = None
+    students_marked: int = 0
 
 
 class AssignmentCreate(BaseModel):
@@ -261,10 +373,17 @@ class AssignmentResponse(ORMModel):
 
 
 class BillCreate(BaseModel):
-    student_id: int
+    student_id: int | None = None
+    coach_id: int | None = None
     amount: Decimal
     due_date: date
     status: BillStatus = BillStatus.DUE
+
+    @model_validator(mode="after")
+    def one_account(self) -> "BillCreate":
+        if (self.student_id is None) == (self.coach_id is None):
+            raise ValueError("Choose either a player or a coach")
+        return self
 
 
 class BillUpdate(BaseModel):
@@ -275,8 +394,10 @@ class BillUpdate(BaseModel):
 
 class BillResponse(ORMModel):
     bill_id: int
-    student_id: int
+    student_id: int | None = None
+    coach_id: int | None = None
     accountant_id: int
+    person_name: str | None = None
     amount: Decimal
     due_date: date
     status: BillStatus
@@ -312,6 +433,8 @@ class SessionRosterStudent(ORMModel):
     photo_url: str | None = None
     fee_status: BillStatus
     attendance_status: AttendanceStatus | None = None
+    checked_in: bool = False
+    skip_reason: str | None = None
 
 
 class MatchCreate(BaseModel):
@@ -321,7 +444,21 @@ class MatchCreate(BaseModel):
     start: time
     end: time
     opponent: str | None = None
+    venue: str | None = None
+    result: str | None = None
     status: MatchStatus = MatchStatus.UPCOMING
+
+
+class MatchUpdate(BaseModel):
+    batch_id: int | None = None
+    title: str | None = None
+    date: DateValue | None = None
+    start: TimeValue | None = None
+    end: TimeValue | None = None
+    opponent: str | None = None
+    venue: str | None = None
+    result: str | None = None
+    status: MatchStatus | None = None
 
 
 class MatchResponse(ORMModel):
@@ -334,12 +471,21 @@ class MatchResponse(ORMModel):
     end: time
     status: MatchStatus
     opponent: str | None = None
+    venue: str | None = None
+    result: str | None = None
 
 
 class LeaveCreate(BaseModel):
     from_date: date
     to_date: date
     reason: str
+
+
+class LeaveUpdate(BaseModel):
+    from_date: date | None = None
+    to_date: date | None = None
+    reason: str | None = None
+    status: LeaveStatus | None = None
 
 
 class LeaveResponse(ORMModel):
@@ -359,8 +505,67 @@ class AttendanceSummary(BaseModel):
 
 class HomeDashboardResponse(BaseModel):
     academy_name: str
+    notice: str | None = None
+    phone: str | None = None
+    address: str | None = None
+    range_start: date | None = None
+    range_end: date | None = None
     date: date
     sessions_today: int
     attendance: AttendanceSummary
     upcoming_sessions: list[SessionResponse]
     upcoming_matches: list[MatchResponse]
+
+
+class PlayerSessionItem(BaseModel):
+    session_id: int
+    batch_id: int
+    batch_name: str | None = None
+    date: date
+    start: time
+    end: time
+    coach_name: str | None = None
+    student_count: int = 0
+    attendance_status: AttendanceStatus | None = None
+    ground: str | None = None
+    note: str | None = None
+    meeting_point: str | None = None
+    focus: str | None = None
+    kit: str | None = None
+    coach_headline: str | None = None
+    checked_in: bool = False
+    skip_reason: str | None = None
+
+
+class PlayerSessionResponseUpdate(BaseModel):
+    checked_in: bool | None = None
+    skip_reason: str | None = None
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class PlayerAttendanceItem(BaseModel):
+    session_id: int
+    date: date
+    batch_name: str | None = None
+    status: AttendanceStatus
+
+
+class PlayerHomeResponse(BaseModel):
+    academy_name: str
+    notice: str | None = None
+    phone: str | None = None
+    address: str | None = None
+    player_name: str
+    date: date
+    sessions_today: int
+    fee_status: BillStatus
+    fee_amount: Decimal | None = None
+    fee_due_date: date | None = None
+    attendance: AttendanceSummary
+    today_sessions: list[PlayerSessionItem]
+    upcoming_sessions: list[PlayerSessionItem]
+    matches: list[MatchResponse]

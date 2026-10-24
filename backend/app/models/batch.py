@@ -22,6 +22,9 @@ class Batch(Base):
     name: Mapped[str] = mapped_column(String(255))
     days: Mapped[str] = mapped_column(String(100))
     sport: Mapped[str] = mapped_column(String(100))
+    meeting_point: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    focus: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    kit: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     academy: Mapped["Academy"] = relationship(back_populates="batches")
     enrollments: Mapped[list["Enrollment"]] = relationship(back_populates="batch")

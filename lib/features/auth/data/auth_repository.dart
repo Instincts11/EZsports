@@ -65,4 +65,11 @@ class AuthRepository {
     );
     return UserModel.fromJson(response.data as Map<String, dynamic>);
   }
+
+  Future<void> changePassword({required String currentPassword, required String newPassword}) async {
+    await DioClient.instance.post(
+      ApiEndpoints.changePassword,
+      data: <String, String>{'current_password': currentPassword, 'new_password': newPassword},
+    );
+  }
 }

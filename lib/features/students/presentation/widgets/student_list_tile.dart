@@ -19,6 +19,15 @@ class StudentListTile extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       leading: InitialsAvatar(initials: student.initials),
       title: Text(student.name, style: AppTextStyles.body),
+      subtitle: student.batchName.isEmpty && student.feeLine.isEmpty
+          ? null
+          : Text(
+              <String>[
+                if (student.batchName.isNotEmpty) student.batchName,
+                if (student.feeLine.isNotEmpty) student.feeLine,
+              ].join(' · '),
+              style: AppTextStyles.caption,
+            ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[

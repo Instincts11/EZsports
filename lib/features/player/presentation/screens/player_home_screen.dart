@@ -1,399 +1,333 @@
 import 'package:ezsports/core/constants/app_colors.dart';
+import 'package:ezsports/core/constants/app_icons.dart';
 import 'package:ezsports/core/constants/app_sizes.dart';
 import 'package:ezsports/core/constants/app_text_styles.dart';
+import 'package:ezsports/core/utils/api_time.dart';
 import 'package:ezsports/core/widgets/cream_card.dart';
+import 'package:ezsports/features/player/data/models/player_home_model.dart';
+import 'package:ezsports/features/player/presentation/screens/player_profile_screen.dart';
 import 'package:ezsports/features/player/presentation/widgets/player_widgets.dart';
-import 'package:ezsports/features/player/providers/player_session_provider.dart';
+import 'package:ezsports/features/player/providers/player_home_providers.dart';
+import 'package:ezsports/features/player/providers/player_profile_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class PlayerHomeScreen extends ConsumerWidget {
+class PlayerHomeScreen extends ConsumerStatefulWidget {
   const PlayerHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final SessionMark today = ref.watch(todaySessionProvider);
+  ConsumerState<PlayerHomeScreen> createState() => _PlayerHomeScreenState();
+}
+
+class _PlayerHomeScreenState extends ConsumerState<PlayerHomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      refreshPlayerDraft(ref);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AsyncValue<PlayerHomeModel> home = ref.watch(playerHomeProvider);
+    final String draftName = ref.watch(playerDraftProvider).name;
     return SafeArea(
       bottom: false,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(AppSizes.screenPadding, 8, AppSizes.screenPadding, 28),
-        children: <Widget>[
-          const Text('ID SPORTS', style: AppTextStyles.overline),
-          const Text('Advaita S', style: AppTextStyles.displayName),
-          const SizedBox(height: 14),
-          LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              final Widget date = const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text('11:57 AM', style: AppTextStyles.bodyOnDark),
-                    Text('06 Sep 2026 Sunday', style: AppTextStyles.caption),
-                  ],
-                ),
-              );
-              final Widget sessions = const Column(
+      child: home.when(
+        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.playerAccent)),
+        error: (Object error, StackTrace stack) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(playerLoadMessage(error), style: AppTextStyles.bodyOnDark, textAlign: TextAlign.center),
+          ),
+        ),
+        data: (PlayerHomeModel data) {
+          final String playerName = data.playerName.isNotEmpty ? data.playerName : draftName;
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(AppSizes.screenPadding, 8, AppSizes.screenPadding, 28),
+            children: <Widget>[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('2', style: TextStyle(fontSize: 28, height: 1, fontWeight: FontWeight.w800, color: AppColors.textOnDark)),
-                  Text('Sessions', style: AppTextStyles.caption),
-                ],
-              );
-              final Widget checkIn = CheckInButton(checked: today.here, onPressed: () => _toggleHere(ref));
-              if (constraints.maxWidth < 340) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Row(
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        const Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.playerMuted),
-                        const SizedBox(width: 8),
-                        date,
-                        sessions,
+                        const Text('ID SPORTS', style: AppTextStyles.overline),
+                        Text(playerName.isEmpty ? 'Player' : playerName, style: AppTextStyles.displayName),
+                        const SizedBox(height: 4),
+                        Text(data.academyName, style: const TextStyle(color: AppColors.playerGold, fontWeight: FontWeight.w600)),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    Align(alignment: Alignment.centerRight, child: checkIn),
-                  ],
-                );
-              }
-              return Row(
-                children: <Widget>[
-                  const Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.playerMuted),
-                  const SizedBox(width: 8),
-                  date,
-                  sessions,
-                  const SizedBox(width: 10),
-                  checkIn,
+                  ),
+                  _NotificationButton(count: _noticeCount(data)),
                 ],
-              );
-            },
-          ),
-          const SizedBox(height: 22),
-          const Row(
-            children: <Widget>[
-              Expanded(child: Text('My attendance', style: AppTextStyles.heading)),
-              Text('01 Sep – 30 Sep', style: AppTextStyles.caption),
-            ],
-          ),
-          const SizedBox(height: 10),
-          const CreamCard(
-            color: AppColors.playerCream,
-            child: Row(
-              children: const <Widget>[
-                Expanded(child: AttendanceRing(value: 8, label: 'Days', color: AppColors.playerAccent, progress: 0.78)),
-                Expanded(child: AttendanceRing(value: 6, label: 'Attended', color: AppColors.playerAmber, progress: 0.62)),
-                Expanded(child: AttendanceRing(value: 2, label: 'Missed', color: AppColors.playerCoral, progress: 0.28)),
+              ),
+              const SizedBox(height: 14),
+              _HomeHeader(data: data),
+              if (data.notice.trim().isNotEmpty) ...<Widget>[
+                const SizedBox(height: 14),
+                _NoticeCard(kicker: 'ACADEMY', title: data.academyName, body: data.notice.trim()),
               ],
-            ),
-          ),
-          const SizedBox(height: 22),
-          const Text('Today', style: AppTextStyles.heading),
-          const SizedBox(height: 10),
-          SessionTile(
-            date: '06 Sep Sunday',
-            time: '3:30 PM to 5:00 PM',
-            batch: 'Weekend Evening',
-            detail: 'Coach: R. Nair',
-            borderColor: today.skipped ? AppColors.playerCoral : AppColors.playerAccent,
-            badge: today.skipped ? const StatusPill('Skipped', tone: PillTone.coral) : null,
-            footer: _TodayActions(mark: today),
-          ),
-          const SizedBox(height: 22),
-          PlayerSectionTitle(
-            'This week',
-            action: 'See schedule ›',
-            onAction: () => context.go('/player/schedule'),
-          ),
-          const SizedBox(height: 10),
-          const SessionTile(
-            date: 'Mon 07 Sep',
-            time: '4:00 PM to 6:00 PM',
-            batch: 'Weekday Evening',
-            detail: 'Coach: R. Nair',
-          ),
-          const SizedBox(height: 10),
-          const SessionTile(
-            date: 'Thu 10 Sep',
-            time: '4:30 PM to 6:00 PM',
-            batch: 'Weekday Evening',
-            detail: 'Coach: R. Nair',
-          ),
-          const SizedBox(height: 10),
-          const SessionTile(
-            date: 'Sat 12 Sep',
-            time: '7:00 AM to 9:00 AM',
-            batch: 'Weekend Morning',
-            detail: 'Coach: R. Nair',
-          ),
-          const SizedBox(height: 10),
-          const SessionTile(
-            date: 'Sun 13 Sep',
-            time: '3:30 PM to 5:00 PM',
-            batch: 'Weekend Evening',
-            detail: 'Coach: R. Nair',
-            badge: StatusPill('Next', tone: PillTone.solid),
-          ),
-          const SizedBox(height: 10),
-          const CreamCard(
-            color: AppColors.playerCream,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Padding(
-                  padding: EdgeInsets.only(top: 6),
-                  child: _GoldDot(),
+              if (data.phone.trim().isNotEmpty || data.address.trim().isNotEmpty) ...<Widget>[
+                const SizedBox(height: 14),
+                _NoticeCard(
+                  kicker: 'CONTACT',
+                  title: data.phone.trim().isEmpty ? data.academyName : data.phone.trim(),
+                  body: data.address.trim().isEmpty ? 'Academy contact' : data.address.trim(),
                 ),
-                SizedBox(width: 10),
-                Expanded(
+              ],
+              if (data.todaySessions.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 22),
+                const Text('Notification', style: AppTextStyles.heading),
+                const SizedBox(height: 10),
+                _NoticeCard(
+                  kicker: 'TODAY',
+                  title: '${data.todaySessions.first.session.batchName} · ${data.todaySessions.first.session.timeRange}',
+                  body: data.todaySessions.first.detail.isEmpty
+                      ? 'Your session is on the schedule for today.'
+                      : data.todaySessions.first.detail,
+                ),
+              ],
+              const SizedBox(height: 22),
+              Row(
+                children: <Widget>[
+                  const Expanded(child: Text('My attendance', style: AppTextStyles.heading)),
+                  Text(formatApiDate(data.date), style: AppTextStyles.caption),
+                ],
+              ),
+              const SizedBox(height: 10),
+              CreamCard(
+                color: AppColors.playerCream,
+                child: Row(
+                  children: <Widget>[
+                    Expanded(child: AttendanceRing(value: data.days, label: 'Days', color: AppColors.playerAccent, progress: _share(data.days, data.days))),
+                    Expanded(child: AttendanceRing(value: data.attended, label: 'Attended', color: AppColors.playerAmber, progress: _share(data.attended, data.days))),
+                    Expanded(child: AttendanceRing(value: data.missed, label: 'Missed', color: AppColors.playerCoral, progress: _share(data.missed, data.days))),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 22),
+              const Text('Today', style: AppTextStyles.heading),
+              const SizedBox(height: 10),
+              if (data.todaySessions.isEmpty)
+                const Text('No session today.', style: AppTextStyles.caption)
+              else
+                ...data.todaySessions.map(
+                  (PlayerSessionModel session) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _SessionCard(session: session),
+                  ),
+                ),
+              const SizedBox(height: 12),
+              PlayerSectionTitle(
+                'Upcoming sessions',
+                action: 'See schedule ›',
+                onAction: () => context.go('/player/schedule'),
+              ),
+              const SizedBox(height: 10),
+              if (data.upcomingSessions.isEmpty)
+                const Text('No upcoming sessions.', style: AppTextStyles.caption)
+              else
+                ...data.upcomingSessions.map(
+                  (PlayerSessionModel session) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: SessionTile(
+                      date: session.session.dateLabel,
+                      time: session.session.timeRange,
+                      batch: session.session.batchName,
+                      detail: session.detail,
+                      pitch: session.session.ground,
+                    ),
+                  ),
+                ),
+              if (data.matches.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 12),
+                PlayerSectionTitle(
+                  'Next fixture',
+                  action: 'See fixtures ›',
+                  onAction: () => context.go('/player/batches'),
+                ),
+                const SizedBox(height: 10),
+                _NoticeCard(
+                  kicker: 'FIXTURE',
+                  title: data.matches.first.opponentLabel,
+                  body: <String>[
+                    data.matches.first.kickoff,
+                    if (data.matches.first.venue.isNotEmpty) data.matches.first.venue,
+                    if (data.matches.first.result.isNotEmpty) data.matches.first.result,
+                    if (data.matches.first.venue.isEmpty && data.matches.first.batchName.isNotEmpty) data.matches.first.batchName,
+                  ].join(' · '),
+                ),
+              ],
+              if (data.feeAmount != null) ...<Widget>[
+                const SizedBox(height: 22),
+                const Text('Fees', style: AppTextStyles.heading),
+                const SizedBox(height: 10),
+                CreamCard(
+                  color: AppColors.playerCream,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text('Coach note', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.playerInk)),
-                      SizedBox(height: 2),
-                      Text('Bring shin guards. Pitch B.', style: TextStyle(color: AppColors.playerInk)),
+                      Text(
+                        '₹${data.feeAmount} · ${data.feeStatus}',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.playerInk),
+                      ),
+                      if (data.feeDueDate != null && data.feeDueDate!.isNotEmpty) ...<Widget>[
+                        const SizedBox(height: 6),
+                        Text('Due ${formatApiDate(data.feeDueDate)}', style: const TextStyle(color: Color(0xFF5C564E))),
+                      ],
                     ],
                   ),
                 ),
               ],
-            ),
-          ),
-          const SizedBox(height: 22),
-          const Text('Recent check-ins', style: AppTextStyles.heading),
-          const SizedBox(height: 10),
-          const CreamCard(
-            color: AppColors.playerCream,
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: Column(
-              children: <Widget>[
-                _CheckInRow('06 Sep · Weekend Evening', missed: false),
-                _CheckInRow('31 Aug · Weekend Evening', missed: false),
-                _CheckInRow('30 Aug · Weekend Evening', missed: true),
-                _CheckInRow('24 Aug · Weekend Evening', missed: false),
-                _CheckInRow('23 Aug · Weekend Evening', missed: false),
-                _CheckInRow('17 Aug · Weekend Evening', missed: false),
-                _CheckInRow('16 Aug · Weekend Evening', missed: false),
-                _CheckInRow('10 Aug · Weekend Evening', missed: true),
-                _CheckInRow('09 Aug · Weekend Evening', missed: false),
-                _CheckInRow('02 Aug · Weekend Evening', missed: false, last: true),
-              ],
-            ),
-          ),
-          const SizedBox(height: 22),
-          const Text('From the academy', style: AppTextStyles.heading),
-          const SizedBox(height: 10),
-          const _NoticeCard(
-            kicker: 'NOTICE',
-            title: 'Sunday session moves to Pitch B',
-            body: 'Weekend evening stays 3:30 PM to 5:00 PM. Gate opens 20 minutes early.',
-          ),
-          const SizedBox(height: 10),
-          const _NoticeCard(
-            kicker: 'KIT',
-            title: 'Jersey 7 · navy training top',
-            body: 'Bring water and both pairs of boots. No jewellery on the pitch.',
-          ),
-          const SizedBox(height: 22),
-          const Text("Today's work", style: AppTextStyles.heading),
-          const SizedBox(height: 10),
-          const _NoticeCard(
-            kicker: 'WARM-UP · 10 MIN',
-            title: 'Rondo, then dynamic stretches',
-            body: 'Join the 4v1 as soon as you pass the gate. Shin guards on before the first pass.',
-          ),
-          const SizedBox(height: 10),
-          const _NoticeCard(
-            kicker: 'BLOCK 1',
-            title: 'First touch on the half-turn',
-            body: 'Receive side-on between the cones. Open your body toward Pitch B’s far goal before the ball arrives.',
-          ),
-          const SizedBox(height: 10),
-          const _NoticeCard(
-            kicker: 'BLOCK 2',
-            title: '3v2 to goal',
-            body: 'You start as the extra attacker. If you lose the ball, you are the first defender back.',
-          ),
-          const SizedBox(height: 22),
-          const Text('Pack for today', style: AppTextStyles.heading),
-          const SizedBox(height: 10),
-          const CreamCard(
-            color: AppColors.playerCream,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                _PackLine('Navy training top and jersey 7'),
-                _PackLine('Moulded boots. Studs only if the grass is wet'),
-                _PackLine('Shin guards. Leave them on until you reach the gate'),
-                _PackLine('750 ml water. No fizzy drinks on the sideline'),
-                _PackLine('A dry shirt for the ride home', last: true),
-              ],
-            ),
-          ),
-          const SizedBox(height: 22),
-          const Text('Fees', style: AppTextStyles.heading),
-          const SizedBox(height: 10),
-          const CreamCard(
-            color: AppColors.playerCream,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text('September · ₹2,500 due 10 Sep', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.playerInk)),
-                SizedBox(height: 6),
-                Text('June, July and August are paid. Meera S can clear September at the front desk before Sunday 13 Sep. Training continues either way this week.', style: TextStyle(color: Color(0xFF5C564E), height: 1.35)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 22),
-          const Text('Getting here', style: AppTextStyles.heading),
-          const SizedBox(height: 10),
-          const _NoticeCard(
-            kicker: 'GATE',
-            title: 'Pitch B gate opens at 3:10 PM',
-            body: 'Pickup is 5:10 PM from the same gate, not the main road. Tell Meera if you will be more than 10 minutes late.',
-          ),
-          const SizedBox(height: 10),
-          const _NoticeCard(
-            kicker: 'WEATHER',
-            title: 'Light showers after 4 PM',
-            body: 'The session stays outdoors unless the groundsman closes Pitch B. A dry shirt is enough. No hoods on the pitch.',
-          ),
-          const SizedBox(height: 22),
-          const Text('On your rest days', style: AppTextStyles.heading),
-          const SizedBox(height: 10),
-          const _NoticeCard(
-            kicker: 'TUE · WED · FRI',
-            title: '20 minutes at home',
-            body: '20 wall passes with the left foot, then 8 cone touches each foot, slow and then at match speed. No filming needed. Coach Nair checks it on Sunday.',
-          ),
-          const SizedBox(height: 10),
-          const _NoticeCard(
-            kicker: 'PARENTS',
-            title: 'Meet Coach Nair on Sat 12 Sep',
-            body: '9:15 AM, after Weekend Morning, outside the Pitch B shed. Topic: the 27 Sep friendly against Kochi Youth.',
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-void _toggleHere(WidgetRef ref) {
-  final SessionMark current = ref.read(todaySessionProvider);
-  ref.read(todaySessionProvider.notifier).state = SessionMark(here: !current.here);
+double _share(int part, int total) {
+  if (total <= 0) {
+    return 0;
+  }
+  return part / total;
 }
 
-class _TodayActions extends ConsumerWidget {
-  const _TodayActions({required this.mark});
+int _noticeCount(PlayerHomeModel data) {
+  final String fee = data.feeStatus.toLowerCase();
+  final int feeNotice = fee == 'due' || fee == 'overdue' ? 1 : 0;
+  return data.todaySessions.length + data.matches.length + feeNotice;
+}
 
-  final SessionMark mark;
+class _NotificationButton extends StatelessWidget {
+  const _NotificationButton({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'Notifications',
+      onPressed: () => showPlayerNotifications(context),
+      icon: Badge(
+        isLabelVisible: true,
+        backgroundColor: AppColors.playerCoral,
+        label: Text('$count'),
+        child: const Icon(AppIcons.notifications, color: AppColors.playerGold),
+      ),
+    );
+  }
+}
+
+class _HomeHeader extends ConsumerWidget {
+  const _HomeHeader({required this.data});
+
+  final PlayerHomeModel data;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final PlayerSessionModel? current = data.todaySessions.where((PlayerSessionModel row) => !row.skipped).firstOrNull;
+    final DateTime now = DateTime.now();
+    final Widget date = Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(_clock(now), style: AppTextStyles.bodyOnDark),
+          Text(formatApiDate(data.date), style: AppTextStyles.caption),
+        ],
+      ),
+    );
+    final Widget sessions = Column(
       children: <Widget>[
-        if (mark.skipped)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              'Coach Nair has this: ${mark.skipReason}',
-              style: const TextStyle(color: AppColors.playerCoral, fontWeight: FontWeight.w700),
+        Text('${data.sessionsToday}', style: const TextStyle(fontSize: 28, height: 1, fontWeight: FontWeight.w800, color: AppColors.textOnDark)),
+        const Text('Sessions', style: AppTextStyles.caption),
+      ],
+    );
+    return Row(
+      children: <Widget>[
+        const Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.playerMuted),
+        const SizedBox(width: 8),
+        date,
+        sessions,
+        if (current != null) ...<Widget>[
+          const SizedBox(width: 10),
+          CheckInButton(
+            checked: current.checkedIn,
+            onPressed: () => _saveResponse(
+              context,
+              () => respondToSession(ref, current.session.sessionId, checkedIn: !current.checkedIn),
             ),
           ),
-        TextButton(
-          onPressed: () => _skipOrUndo(context, ref),
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.playerCoral,
-            padding: EdgeInsets.zero,
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          child: Text(mark.skipped ? 'Undo skip' : 'Skip session', style: const TextStyle(fontWeight: FontWeight.w700)),
-        ),
-        const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.centerRight,
-          child: CheckInButton(checked: mark.here, onPressed: () => _toggleHere(ref)),
-        ),
+        ],
       ],
     );
   }
+}
 
-  Future<void> _skipOrUndo(BuildContext context, WidgetRef ref) async {
-    if (mark.skipped) {
-      ref.read(todaySessionProvider.notifier).state = const SessionMark();
-      return;
+Future<void> _saveResponse(BuildContext context, Future<void> Function() save) async {
+  try {
+    await save();
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save. Check your connection and try again.')),
+      );
     }
-    final String? reason = await showSkipSessionSheet(context, sessionLabel: 'today, 3:30 PM');
-    if (reason == null) {
-      return;
-    }
-    ref.read(todaySessionProvider.notifier).state = SessionMark(skipReason: reason);
   }
 }
 
-class _GoldDot extends StatelessWidget {
-  const _GoldDot();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 10,
-      height: 10,
-      decoration: const BoxDecoration(color: AppColors.playerGold, shape: BoxShape.circle),
-    );
+String _clock(DateTime now) {
+  final String suffix = now.hour >= 12 ? 'PM' : 'AM';
+  int hour = now.hour % 12;
+  if (hour == 0) {
+    hour = 12;
   }
+  return '$hour:${now.minute.toString().padLeft(2, '0')} $suffix';
 }
 
-class _CheckInRow extends StatelessWidget {
-  const _CheckInRow(this.label, {required this.missed, this.last = false});
+class _SessionCard extends ConsumerWidget {
+  const _SessionCard({required this.session});
 
-  final String label;
-  final bool missed;
-  final bool last;
+  final PlayerSessionModel session;
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            children: <Widget>[
-              Expanded(child: Text(label, style: const TextStyle(color: AppColors.playerInk, fontWeight: FontWeight.w600))),
-              StatusPill(missed ? 'Missed' : 'On time', tone: missed ? PillTone.coral : PillTone.teal),
-            ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    return SessionTile(
+      date: session.session.dateLabel,
+      time: session.session.timeRange,
+      batch: session.session.batchName,
+      detail: session.detail,
+      pitch: session.session.ground,
+      borderColor: session.skipped ? AppColors.playerCoral : AppColors.playerAccent,
+      badge: sessionBadge(session),
+      footer: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (session.skipped)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                'Noted: ${session.skipReason}',
+                style: const TextStyle(color: AppColors.playerCoral, fontWeight: FontWeight.w700),
+              ),
+            ),
+          TextButton(
+            onPressed: () => skipOrUndoSession(context, ref, session, session.session.timeRange),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.playerCoral,
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(session.skipped ? 'Undo skip' : 'Skip session', style: const TextStyle(fontWeight: FontWeight.w700)),
           ),
-        ),
-        if (!last) const Divider(height: 1, color: AppColors.playerLine),
-      ],
-    );
-  }
-}
-
-class _PackLine extends StatelessWidget {
-  const _PackLine(this.text, {this.last = false});
-
-  final String text;
-  final bool last;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              const Padding(padding: EdgeInsets.only(top: 6), child: _GoldDot()),
-              const SizedBox(width: 10),
-              Expanded(child: Text(text, style: const TextStyle(color: AppColors.playerInk, fontWeight: FontWeight.w600))),
-            ],
-          ),
-        ),
-        if (!last) const Divider(height: 1, color: AppColors.playerLine),
-      ],
+        ],
+      ),
     );
   }
 }

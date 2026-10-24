@@ -1,8 +1,8 @@
-import 'package:dio/dio.dart';
 import 'package:ezsports/core/constants/app_colors.dart';
 import 'package:ezsports/core/constants/app_icons.dart';
 import 'package:ezsports/core/constants/app_sizes.dart';
 import 'package:ezsports/core/constants/app_text_styles.dart';
+import 'package:ezsports/core/network/api_error.dart';
 import 'package:ezsports/core/widgets/detail_field.dart';
 import 'package:ezsports/features/player/data/models/player_profile_model.dart';
 import 'package:ezsports/features/player/providers/player_profile_providers.dart';
@@ -34,7 +34,47 @@ class _PlayerDetailsScreenState extends ConsumerState<PlayerDetailsScreen> {
   final TextEditingController _blood = TextEditingController();
   final TextEditingController _allergies = TextEditingController();
   bool _hydrated = false;
+  bool _userEdited = false;
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fillFrom(ref.read(playerDraftProvider));
+    _watchEdits();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await refreshPlayerDraft(ref);
+      if (mounted && !_userEdited) {
+        setState(() => _fillFrom(ref.read(playerDraftProvider)));
+      }
+    });
+  }
+
+  void _watchEdits() {
+    for (final TextEditingController controller in <TextEditingController>[
+      _firstName,
+      _lastName,
+      _dob,
+      _gender,
+      _mobile,
+      _emergency,
+      _guardian,
+      _guardianMobile,
+      _position,
+      _foot,
+      _school,
+      _schoolClass,
+      _jersey,
+      _blood,
+      _allergies,
+    ]) {
+      controller.addListener(() {
+        if (_hydrated) {
+          _userEdited = true;
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -88,10 +128,10 @@ class _PlayerDetailsScreenState extends ConsumerState<PlayerDetailsScreen> {
     }
 
     setState(() => _saving = true);
+    final String first = _firstName.text.trim();
+    final String last = _lastName.text.trim();
     try {
-      final String first = _firstName.text.trim();
-      final String last = _lastName.text.trim();
-      await ref.read(playerRepositoryProvider).updateProfile(<String, dynamic>{
+      final PlayerProfileModel saved = await ref.read(playerRepositoryProvider).updateProfile(<String, dynamic>{
         'first_name': first,
         'last_name': last,
         'name': '$first $last'.trim(),
@@ -109,6 +149,7 @@ class _PlayerDetailsScreenState extends ConsumerState<PlayerDetailsScreen> {
         'blood_group': _blood.text.trim().isEmpty ? null : _blood.text.trim(),
         'allergies': _allergies.text.trim().isEmpty ? null : _allergies.text.trim(),
       });
+      ref.read(playerDraftProvider.notifier).state = saved;
       ref.invalidate(playerProfileProvider);
       if (!mounted) {
         return;
@@ -117,15 +158,12 @@ class _PlayerDetailsScreenState extends ConsumerState<PlayerDetailsScreen> {
         SnackBar(content: Text('Saved details for $first $last'.trim())),
       );
       context.go('/player/profile');
-    } on DioException catch (error) {
-      final Object? detail = error.response?.data is Map<String, dynamic>
-          ? (error.response!.data as Map<String, dynamic>)['detail']
-          : null;
+    } catch (error) {
       if (!mounted) {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(detail?.toString() ?? 'Could not save details')),
+        SnackBar(content: Text(apiErrorMessage(error, 'Your details could not be saved. Check your connection and try again.'))),
       );
     } finally {
       if (mounted) {
@@ -136,34 +174,12 @@ class _PlayerDetailsScreenState extends ConsumerState<PlayerDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<PlayerProfileModel> profileAsync = ref.watch(playerProfileProvider);
-    profileAsync.whenData((PlayerProfileModel profile) {
-      if (!_hydrated) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && !_hydrated) {
-            setState(() => _fillFrom(profile));
-          }
-        });
-      }
-    });
+    final PlayerProfileModel profile = ref.watch(playerDraftProvider);
 
     return Scaffold(
       backgroundColor: AppColors.playerBackground,
       body: SafeArea(
-        child: profileAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (Object error, StackTrace stackTrace) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                'Could not load saved player details. Sign in as a player after OTP signup.\n$error',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.muted,
-              ),
-            ),
-          ),
-          data: (PlayerProfileModel profile) {
-            return ListView(
+        child: ListView(
               padding: const EdgeInsets.fromLTRB(AppSizes.screenPadding, 8, AppSizes.screenPadding, 28),
               children: <Widget>[
                 Row(
@@ -244,9 +260,7 @@ class _PlayerDetailsScreenState extends ConsumerState<PlayerDetailsScreen> {
                   ),
                 ),
               ],
-            );
-          },
-        ),
+            ),
       ),
     );
   }

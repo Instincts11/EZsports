@@ -20,8 +20,20 @@ class BatchRosterScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final BatchModel? batch = ref.watch(batchByIdProvider(batchId));
-    final List<StudentModel> players = ref.watch(demoPlayersProvider);
+    final AsyncValue<List<BatchModel>> batches = ref.watch(batchesProvider);
+    final AsyncValue<List<StudentModel>> roster = ref.watch(batchRosterProvider(batchId));
+    final BatchModel? batch = batches.maybeWhen(
+      data: (List<BatchModel> items) {
+        for (final BatchModel item in items) {
+          if (item.batchId == batchId) {
+            return item;
+          }
+        }
+        return null;
+      },
+      orElse: () => null,
+    );
+    final int playerCount = roster.maybeWhen(data: (List<StudentModel> items) => items.length, orElse: () => 0);
     final String title = batch?.name ?? AppStrings.batches;
 
     return Scaffold(
@@ -34,7 +46,15 @@ class BatchRosterScreen extends ConsumerWidget {
         title: Column(
           children: <Widget>[
             Text(title, style: AppTextStyles.titleOnDark),
-            Text('${batch?.days ?? ''} · ${players.length} players', style: AppTextStyles.caption),
+            Text(
+              <String>[
+                if ((batch?.days ?? '').isNotEmpty) batch!.days,
+                if ((batch?.meetingPoint ?? '').isNotEmpty) 'Meet at ${batch!.meetingPoint}',
+                if ((batch?.kit ?? '').isNotEmpty) 'Kit: ${batch!.kit}',
+                '$playerCount players',
+              ].join(' · '),
+              style: AppTextStyles.caption,
+            ),
           ],
         ),
         actions: const <Widget>[
@@ -47,17 +67,32 @@ class BatchRosterScreen extends ConsumerWidget {
         children: <Widget>[
           const CoachSearchField(hint: AppStrings.findPlayer),
           const SizedBox(height: 12),
-          CreamCard(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Column(
-              children: players
-                  .map(
-                    (StudentModel student) => StudentListTile(
-                      student: student,
-                      onTap: () => context.go('/players/${student.studentId}'),
-                    ),
-                  )
-                  .toList(),
+          roster.when(
+            data: (List<StudentModel> players) {
+              if (players.isEmpty) {
+                return const Text('No players are enrolled in this batch.', style: AppTextStyles.muted);
+              }
+              return CreamCard(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(
+                  children: players
+                      .map(
+                        (StudentModel student) => StudentListTile(
+                          student: student,
+                          onTap: () => context.go('/players/${student.studentId}'),
+                        ),
+                      )
+                      .toList(),
+                ),
+              );
+            },
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            ),
+            error: (Object error, StackTrace stack) => const Text(
+              'This roster could not be loaded.',
+              style: AppTextStyles.muted,
             ),
           ),
         ],

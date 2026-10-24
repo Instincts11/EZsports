@@ -3,80 +3,65 @@ import 'package:ezsports/core/constants/app_sizes.dart';
 import 'package:ezsports/core/constants/app_strings.dart';
 import 'package:ezsports/core/constants/app_text_styles.dart';
 import 'package:ezsports/core/widgets/cream_card.dart';
+import 'package:ezsports/features/matches/data/models/match_model.dart';
+import 'package:ezsports/features/matches/providers/matches_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class StudentsScreen extends StatelessWidget {
+class StudentsScreen extends ConsumerWidget {
   const StudentsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<List<MatchModel>> matches = ref.watch(matchesProvider);
+
     return SafeArea(
       bottom: false,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(AppSizes.screenPadding, 8, AppSizes.screenPadding, 28),
-        children: const <Widget>[
-          Text(AppStrings.batches, style: AppTextStyles.pageTitle),
-          SizedBox(height: 6),
-          Text('3 matches · 1 lineup still open', style: AppTextStyles.muted),
-          SizedBox(height: 20),
-          _FixtureCard(
-            opponent: 'Kochi United',
-            kickoff: 'Sun 13 Sep · 5:30 PM',
-            detail: 'Pitch B · home · U-14 friendly',
-            lineup: '16 named · bench set',
+        children: <Widget>[
+          const Text(AppStrings.batches, style: AppTextStyles.pageTitle),
+          const SizedBox(height: 6),
+          matches.maybeWhen(
+            data: (List<MatchModel> items) {
+              final int open = items.where((MatchModel match) => match.status != 'previous').length;
+              return Text(
+                '${items.length} matches · $open still open',
+                style: AppTextStyles.muted,
+              );
+            },
+            orElse: () => const Text('Fixtures from the academy', style: AppTextStyles.muted),
           ),
-          SizedBox(height: 12),
-          _FixtureCard(
-            opponent: 'Academy Cup',
-            kickoff: 'Sat 20 Sep · 7:30 AM',
-            detail: 'Home pitch · group stage',
-            lineup: 'Lineup open · name it by Thursday',
-          ),
-          SizedBox(height: 12),
-          _FixtureCard(
-            opponent: 'Harbour FC',
-            kickoff: 'Sun 30 Aug · full time',
-            detail: 'Away · result 2–1',
-            lineup: 'Sheet not signed',
-          ),
-          SizedBox(height: 22),
-          Text('Before kickoff', style: AppTextStyles.heading),
-          SizedBox(height: 12),
-          CreamCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text('Kochi United kit', style: AppTextStyles.title),
-                SizedBox(height: 6),
-                Text('Home shirts are in the store. Count 16 bibs for the warm-up and leave two with the bench.', style: AppTextStyles.body),
-              ],
+          const SizedBox(height: 20),
+          matches.when(
+            data: (List<MatchModel> items) {
+              if (items.isEmpty) {
+                return const Text('No fixtures have been added yet.', style: AppTextStyles.muted);
+              }
+              return Column(
+                children: items
+                    .map(
+                      (MatchModel match) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _FixtureCard(
+                          opponent: match.opponentLabel,
+                          kickoff: match.kickoff,
+                          detail: match.detail,
+                          lineup: match.lineupLabel,
+                        ),
+                      ),
+                    )
+                    .toList(),
+              );
+            },
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
             ),
-          ),
-          SizedBox(height: 12),
-          CreamCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text('Academy Cup squad', style: AppTextStyles.title),
-                SizedBox(height: 6),
-                Text('Pick 14 outfield players and 1 goalkeeper by Thursday evening. Weekend Evening players are first call.', style: AppTextStyles.body),
-              ],
+            error: (Object error, StackTrace stack) => const Text(
+              'Sign in as a coach to load fixtures.',
+              style: AppTextStyles.muted,
             ),
-          ),
-          SizedBox(height: 12),
-          CreamCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text('Harbour FC sheet', style: AppTextStyles.title),
-                SizedBox(height: 6),
-                Text('The 2–1 result is on the board, but the match sheet is still unsigned. Sign it before Sunday’s team talk.', style: AppTextStyles.body),
-              ],
-            ),
-          ),
-          SizedBox(height: 18),
-          Center(
-            child: Text('Fixtures · Esperanza Football Academy', style: AppTextStyles.caption),
           ),
         ],
       ),
@@ -106,8 +91,10 @@ class _FixtureCard extends StatelessWidget {
           Text(opponent, style: AppTextStyles.title),
           const SizedBox(height: 4),
           Text(kickoff, style: AppTextStyles.body),
-          const SizedBox(height: 8),
-          Text(detail, style: AppTextStyles.muted),
+          if (detail.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 8),
+            Text(detail, style: AppTextStyles.muted),
+          ],
           const SizedBox(height: 4),
           Text(lineup, style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700)),
         ],

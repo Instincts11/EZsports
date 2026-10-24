@@ -1,0 +1,6 @@
+# Proxies /api/* through the Flutter web server so coach/player calls
+# show in Chrome DevTools → Network on the same localhost origin.
+server:
+  proxy:
+    - target: "http://127.0.0.1:8000/"
+      prefix: "/api/"

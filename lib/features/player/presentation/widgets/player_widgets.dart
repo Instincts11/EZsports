@@ -1,7 +1,10 @@
 import 'package:ezsports/core/constants/app_colors.dart';
 import 'package:ezsports/core/constants/app_text_styles.dart';
 import 'package:ezsports/core/widgets/cream_card.dart';
+import 'package:ezsports/features/player/data/models/player_home_model.dart';
+import 'package:ezsports/features/player/providers/player_home_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 const List<String> skipSessionReasons = <String>[
   'School or exam',
@@ -11,7 +14,44 @@ const List<String> skipSessionReasons = <String>[
   'Already arranged with coach',
 ];
 
-Future<String?> showSkipSessionSheet(BuildContext context, {required String sessionLabel}) {
+Widget? sessionBadge(PlayerSessionModel session, {Widget? fallback}) {
+  if (session.skipped) {
+    return const StatusPill('Skipped', tone: PillTone.coral);
+  }
+  if (session.attendanceStatus == 'present') {
+    return const StatusPill('Attended', tone: PillTone.solid);
+  }
+  if (session.attendanceStatus == 'absent') {
+    return const StatusPill('Missed', tone: PillTone.coral);
+  }
+  if (session.checkedIn) {
+    return const StatusPill('Checked in', tone: PillTone.solid);
+  }
+  return fallback;
+}
+
+Future<void> skipOrUndoSession(BuildContext context, WidgetRef ref, PlayerSessionModel session, String sessionLabel) async {
+  try {
+    if (session.skipped) {
+      await respondToSession(ref, session.session.sessionId, clearSkip: true);
+      return;
+    }
+    final String? reason = await showSkipSessionSheet(context, sessionLabel: sessionLabel, coachName: session.coachName);
+    if (reason == null) {
+      return;
+    }
+    await respondToSession(ref, session.session.sessionId, skipReason: reason);
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save. Check your connection and try again.')),
+      );
+    }
+  }
+}
+
+Future<String?> showSkipSessionSheet(BuildContext context, {required String sessionLabel, String? coachName}) {
+  final String coach = coachName == null || coachName.trim().isEmpty ? 'Your coach' : 'Coach ${coachName.trim()}';
   return showModalBottomSheet<String>(
     context: context,
     useRootNavigator: true,
@@ -47,9 +87,9 @@ Future<String?> showSkipSessionSheet(BuildContext context, {required String sess
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.playerInk),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'Coach Nair gets the reason before the session. Your place in the group stays.',
-                style: TextStyle(color: Color(0xFF5C564E), height: 1.35),
+              Text(
+                '$coach gets the reason before the session. Your place in the group stays.',
+                style: const TextStyle(color: Color(0xFF5C564E), height: 1.35),
               ),
               const SizedBox(height: 4),
               for (final String reason in skipSessionReasons)
@@ -218,6 +258,7 @@ class SessionTile extends StatelessWidget {
     required this.time,
     required this.batch,
     this.detail,
+    this.pitch,
     this.badge,
     this.footer,
     this.borderColor,
@@ -228,6 +269,7 @@ class SessionTile extends StatelessWidget {
   final String time;
   final String batch;
   final String? detail;
+  final String? pitch;
   final Widget? badge;
   final Widget? footer;
   final Color? borderColor;
@@ -252,6 +294,7 @@ class SessionTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(time, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.playerInk)),
                     Text(batch, style: AppTextStyles.muted),
+                    if (pitch != null && pitch!.isNotEmpty) Text('Pitch: $pitch', style: AppTextStyles.muted),
                     if (detail != null) Text(detail!, style: AppTextStyles.muted),
                   ],
                 ),

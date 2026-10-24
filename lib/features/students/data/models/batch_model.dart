@@ -7,6 +7,9 @@ class BatchModel {
     this.timeRange = '',
     this.pitch = '',
     this.capacity = 0,
+    this.meetingPoint = '',
+    this.focus = '',
+    this.kit = '',
   });
 
   final int batchId;
@@ -16,6 +19,9 @@ class BatchModel {
   final String timeRange;
   final String pitch;
   final int capacity;
+  final String meetingPoint;
+  final String focus;
+  final String kit;
 
   String get placeLine {
     if (timeRange.isEmpty) {
@@ -33,6 +39,9 @@ class BatchModel {
       name: json['name'] as String,
       days: json['days'] as String,
       studentCount: json['student_count'] as int? ?? 0,
+      meetingPoint: json['meeting_point'] as String? ?? '',
+      focus: json['focus'] as String? ?? '',
+      kit: json['kit'] as String? ?? '',
     );
   }
 }

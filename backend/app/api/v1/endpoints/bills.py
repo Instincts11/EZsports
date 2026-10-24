@@ -14,7 +14,7 @@ router = APIRouter(prefix="/bills", tags=["Bills"])
 def add_bill(
     payload: BillCreate,
     db: Session = Depends(get_db),
-    current: CurrentUser = Depends(require_roles(UserRole.ACCOUNTANT)),
+    current: CurrentUser = Depends(require_roles(UserRole.ACCOUNTANT, UserRole.SUPER_ADMIN)),
 ) -> BillResponse:
     return create_bill(db, current, payload)
 
@@ -22,10 +22,11 @@ def add_bill(
 @router.get("", response_model=list[BillResponse])
 def read_bills(
     student_id: int | None = Query(default=None),
+    coach_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
-    _: CurrentUser = Depends(require_roles(UserRole.ACCOUNTANT, UserRole.SUPER_ADMIN, UserRole.COACH)),
+    current: CurrentUser = Depends(require_roles(UserRole.ACCOUNTANT, UserRole.SUPER_ADMIN, UserRole.COACH)),
 ) -> list[BillResponse]:
-    return list_bills(db, student_id)
+    return list_bills(db, current, student_id, coach_id)
 
 
 @router.patch("/{bill_id}", response_model=BillResponse)
@@ -33,6 +34,6 @@ def edit_bill(
     bill_id: int,
     payload: BillUpdate,
     db: Session = Depends(get_db),
-    _: CurrentUser = Depends(require_roles(UserRole.ACCOUNTANT)),
+    current: CurrentUser = Depends(require_roles(UserRole.ACCOUNTANT, UserRole.SUPER_ADMIN)),
 ) -> BillResponse:
-    return update_bill(db, bill_id, payload)
+    return update_bill(db, current, bill_id, payload)

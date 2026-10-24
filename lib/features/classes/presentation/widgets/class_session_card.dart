@@ -39,6 +39,11 @@ class ClassSessionCard extends StatelessWidget {
                 children: <Widget>[
                   Text(session.timeRange, style: AppTextStyles.title),
                   Text(session.batchName, style: AppTextStyles.muted),
+                  if (session.ground.isNotEmpty) Text(session.ground, style: AppTextStyles.body),
+                  if (session.note.isNotEmpty) Text(session.note, style: AppTextStyles.muted),
+                  if (session.meetingPoint.isNotEmpty) Text('Meet at ${session.meetingPoint}', style: AppTextStyles.muted),
+                  if (session.focus.isNotEmpty) Text(session.focus, style: AppTextStyles.body),
+                  if (session.kit.isNotEmpty) Text('Kit: ${session.kit}', style: AppTextStyles.muted),
                   const SizedBox(height: 8),
                   Row(
                     children: <Widget>[

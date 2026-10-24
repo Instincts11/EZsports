@@ -7,6 +7,7 @@ from app.core.database import get_db
 from app.core.dependencies import CurrentUser, require_roles
 from app.models.enums import UserRole
 from app.schemas import (
+    MessageResponse,
     AssignmentCreate,
     AssignmentMove,
     AssignmentResponse,
@@ -14,6 +15,7 @@ from app.schemas import (
     CoachAttendanceResponse,
     SessionCreate,
     SessionResponse,
+    SessionUpdate,
     SessionRosterStudent,
     StudentAttendanceMark,
     StudentAttendanceResponse,
@@ -28,10 +30,13 @@ from app.services.attendance_service import (
 from app.services.operations_service import (
     assign_coach,
     create_session,
+    delete_assignment,
+    delete_session,
     get_session,
     list_session_coaches,
     list_sessions,
     move_coach,
+    update_session,
 )
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
@@ -55,6 +60,16 @@ def read_sessions(
     current: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN, UserRole.COACH)),
 ) -> list[SessionResponse]:
     return list_sessions(db, current, batch_id, date_from, date_to)
+
+
+@router.patch("/{session_id}", response_model=SessionResponse)
+def edit_session(
+    session_id: int,
+    payload: SessionUpdate,
+    db: Session = Depends(get_db),
+    _: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN)),
+) -> SessionResponse:
+    return update_session(db, session_id, payload)
 
 
 @router.get("/{session_id}", response_model=SessionResponse)
@@ -93,6 +108,26 @@ def add_assignment(
     return assign_coach(db, current, payload)
 
 
+@router.delete("/assignments/{assignment_id}", response_model=MessageResponse)
+def remove_assignment(
+    assignment_id: int,
+    db: Session = Depends(get_db),
+    _: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN)),
+) -> MessageResponse:
+    delete_assignment(db, assignment_id)
+    return MessageResponse(message="Coach removed from this session")
+
+
+@router.delete("/{session_id}", response_model=MessageResponse)
+def remove_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+    _: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN)),
+) -> MessageResponse:
+    delete_session(db, session_id)
+    return MessageResponse(message="Session deleted")
+
+
 @router.patch("/assignments/{assignment_id}", response_model=AssignmentResponse)
 def change_assignment(
     assignment_id: int,
@@ -107,10 +142,11 @@ def change_assignment(
 def check_in_coach(
     session_id: int,
     payload: AttendanceMark,
+    coach_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
     current: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN, UserRole.COACH)),
 ) -> CoachAttendanceResponse:
-    return mark_coach_attendance(db, current, session_id, payload)
+    return mark_coach_attendance(db, current, session_id, payload, coach_id)
 
 
 @router.get("/{session_id}/coach-attendance", response_model=list[CoachAttendanceResponse])
@@ -127,7 +163,7 @@ def mark_student(
     session_id: int,
     payload: StudentAttendanceMark,
     db: Session = Depends(get_db),
-    current: CurrentUser = Depends(require_roles(UserRole.COACH)),
+    current: CurrentUser = Depends(require_roles(UserRole.COACH, UserRole.SUPER_ADMIN)),
 ) -> StudentAttendanceResponse:
     return mark_student_attendance(db, current, session_id, payload)
 

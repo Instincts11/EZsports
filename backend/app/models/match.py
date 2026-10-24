@@ -24,5 +24,7 @@ class Match(Base):
     end: Mapped[time] = mapped_column(Time)
     status: Mapped[MatchStatus] = mapped_column(default=MatchStatus.UPCOMING)
     opponent: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    venue: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    result: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     batch: Mapped["Batch"] = relationship(back_populates="matches")
