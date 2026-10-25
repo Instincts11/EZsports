@@ -175,7 +175,9 @@ class PlayerProfileScreen extends ConsumerWidget {
             CreamCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: player.attendanceMarks
+                children: (List<AttendanceMarkModel>.of(player.attendanceMarks)
+                      ..sort((AttendanceMarkModel a, AttendanceMarkModel b) => b.date.compareTo(a.date)))
+                    .take(6)
                     .map(
                       (AttendanceMarkModel mark) => Padding(
                         padding: const EdgeInsets.only(bottom: 8),
