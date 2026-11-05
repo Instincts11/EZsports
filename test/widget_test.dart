@@ -13,7 +13,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Advaita S'), findsOneWidget);
     expect(find.text('My attendance'), findsOneWidget);
-    expect(find.text("I'm here"), findsWidgets);
+    expect(find.text("I'm here"), findsNothing);
 
     await tester.tap(find.text('Fixtures'));
     await tester.pumpAndSettle();

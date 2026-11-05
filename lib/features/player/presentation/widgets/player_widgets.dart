@@ -139,40 +139,6 @@ class StatusPill extends StatelessWidget {
   }
 }
 
-class CheckInButton extends StatelessWidget {
-  const CheckInButton({super.key, required this.checked, required this.onPressed, this.label = "I'm here"});
-
-  final bool checked;
-  final VoidCallback onPressed;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.playerAccent,
-      borderRadius: BorderRadius.circular(24),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(24),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(checked ? Icons.check_circle : Icons.check, size: 16, color: AppColors.onPrimary),
-              const SizedBox(width: 6),
-              Text(
-                checked ? 'Here' : label,
-                style: const TextStyle(color: AppColors.onPrimary, fontWeight: FontWeight.w700, fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class AttendanceRing extends StatelessWidget {
   const AttendanceRing({
     super.key,

@@ -274,8 +274,10 @@ class EmailRequest(BaseModel):
 
 class BatchCreate(BaseModel):
     name: str
-    days: str
-    sport: str
+    days: str = "Not set"
+    sport: str = "Football"
+    description: str | None = None
+    coach_id: int | None = None
 
 
 class BatchUpdate(BaseModel):
@@ -285,6 +287,8 @@ class BatchUpdate(BaseModel):
     meeting_point: str | None = None
     focus: str | None = None
     kit: str | None = None
+    description: str | None = None
+    coach_id: int | None = None
 
 
 class BatchResponse(ORMModel):
@@ -296,6 +300,9 @@ class BatchResponse(ORMModel):
     meeting_point: str | None = None
     focus: str | None = None
     kit: str | None = None
+    description: str | None = None
+    coach_id: int | None = None
+    coach_name: str | None = None
     student_count: int = 0
 
 

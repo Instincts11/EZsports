@@ -20,7 +20,7 @@ type SessionDraft = {
 };
 
 type FixtureDraft = {
-  match_id: number;
+  match_id: number;                                      
   batch_id: string;
   title: string;
   opponent: string;
@@ -42,6 +42,11 @@ type FeeDraft = {
 const fieldClass =
   "w-full rounded-xl border border-line bg-cream px-3 py-2 text-sm text-ink-text outline-none focus:border-terracotta";
 const buttonClass = "rounded-xl bg-terracotta px-4 py-2 text-sm font-bold text-white disabled:opacity-60";
+const recentLimit = 4;
+
+function byMostRecent(left: { date: string; start: string }, right: { date: string; start: string }) {
+  return `${right.date}T${right.start || "00:00"}`.localeCompare(`${left.date}T${left.start || "00:00"}`);
+}
 
 function clock(value: string) {
   return value ? value.slice(0, 5) : "";
@@ -93,6 +98,8 @@ export function PageContent({
   const [version, setVersion] = useState(0);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const [sessionHistory, setSessionHistory] = useState(false);
+  const [fixtureHistory, setFixtureHistory] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -464,6 +471,12 @@ export function PageContent({
     kind === "player"
       ? fixtures.filter((fixture) => enrollments.some((row) => String(row.batch_id) === fixture.batch_id))
       : fixtures;
+  const orderedSessions = [...sessions].sort(byMostRecent);
+  const visibleSessions = sessionHistory ? orderedSessions : orderedSessions.slice(0, recentLimit);
+  const earlierSessions = Math.max(0, orderedSessions.length - recentLimit);
+  const orderedFixtures = [...listedFixtures].sort(byMostRecent);
+  const visibleFixtures = fixtureHistory ? orderedFixtures : orderedFixtures.slice(0, recentLimit);
+  const earlierFixtures = Math.max(0, orderedFixtures.length - recentLimit);
 
   return (
     <div className="flex flex-col gap-4">
@@ -584,8 +597,13 @@ export function PageContent({
       <Section title={titles?.sessions ?? "Sessions"}>
         {hints?.sessions ? <p className="text-sm text-muted sm:col-span-2">{hints.sessions}</p> : null}
         <div className="sm:col-span-2 flex flex-col gap-4">
-          {sessions.length === 0 ? <p className="text-sm text-muted">No sessions on this schedule yet.</p> : null}
-          {sessions.map((session) => (
+          {orderedSessions.length === 0 ? <p className="text-sm text-muted">No sessions on this schedule yet.</p> : null}
+          {earlierSessions > 0 ? (
+            <button type="button" onClick={() => setSessionHistory((open) => !open)} className="self-start text-sm font-semibold text-terracotta">
+              {sessionHistory ? "Hide history" : `History (${earlierSessions})`}
+            </button>
+          ) : null}
+          {visibleSessions.map((session) => (
             <div key={session.session_id} className="grid gap-3 rounded-2xl border border-line bg-card px-4 py-4 sm:grid-cols-2">
               <label className="block">
                 <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted">Date</span>
@@ -695,8 +713,13 @@ export function PageContent({
       <Section title={titles?.fixtures ?? "Fixtures"}>
         {hints?.fixtures ? <p className="text-sm text-muted sm:col-span-2">{hints.fixtures}</p> : null}
         <div className="sm:col-span-2 flex flex-col gap-4">
-          {listedFixtures.length === 0 ? <p className="text-sm text-muted">No fixtures yet.</p> : null}
-          {listedFixtures.map((fixture) => (
+          {orderedFixtures.length === 0 ? <p className="text-sm text-muted">No fixtures yet.</p> : null}
+          {earlierFixtures > 0 ? (
+            <button type="button" onClick={() => setFixtureHistory((open) => !open)} className="self-start text-sm font-semibold text-terracotta">
+              {fixtureHistory ? "Hide history" : `History (${earlierFixtures})`}
+            </button>
+          ) : null}
+          {visibleFixtures.map((fixture) => (
             <div key={fixture.match_id} className="grid gap-3 rounded-2xl border border-line bg-card px-4 py-4 sm:grid-cols-2">
               <label className="block">
                 <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted">Title</span>

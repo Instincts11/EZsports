@@ -16,7 +16,13 @@ class ClassesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final String filter = ref.watch(sessionFilterProvider);
+    final DateTimeRange? range = ref.watch(sessionRangeProvider);
     final AsyncValue<List<SessionModel>> sessionsAsync = ref.watch(sessionsProvider);
+
+    void showStatus(String status) {
+      ref.read(sessionRangeProvider.notifier).state = null;
+      ref.read(sessionFilterProvider.notifier).state = status;
+    }
 
     return SafeArea(
       bottom: false,
@@ -41,7 +47,19 @@ class ClassesScreen extends ConsumerWidget {
                   children: <Widget>[
                     const Icon(AppIcons.calendar, size: 16, color: AppColors.primary),
                     const SizedBox(width: 8),
-                    Text(_sessionRange(sessionsAsync.asData?.value ?? const <SessionModel>[]), style: AppTextStyles.bodyOnDark),
+                    Text(
+                      range == null
+                          ? _sessionRange(sessionsAsync.asData?.value ?? const <SessionModel>[])
+                          : _rangeLabel(range.start, range.end),
+                      style: AppTextStyles.bodyOnDark,
+                    ),
+                    if (range != null) ...<Widget>[
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: () => ref.read(sessionRangeProvider.notifier).state = null,
+                        child: const Icon(Icons.close, size: 16, color: AppColors.primary),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -54,20 +72,20 @@ class ClassesScreen extends ConsumerWidget {
               children: <Widget>[
                 _FilterChip(
                   label: AppStrings.upcoming,
-                  selected: filter == 'upcoming',
-                  onTap: () => ref.read(sessionFilterProvider.notifier).state = 'upcoming',
+                  selected: range == null && filter == 'upcoming',
+                  onTap: () => showStatus('upcoming'),
                 ),
                 const SizedBox(width: 8),
                 _FilterChip(
                   label: AppStrings.ongoing,
-                  selected: filter == 'ongoing',
-                  onTap: () => ref.read(sessionFilterProvider.notifier).state = 'ongoing',
+                  selected: range == null && filter == 'ongoing',
+                  onTap: () => showStatus('ongoing'),
                 ),
                 const SizedBox(width: 8),
                 _FilterChip(
                   label: AppStrings.previous,
-                  selected: filter == 'previous',
-                  onTap: () => ref.read(sessionFilterProvider.notifier).state = 'previous',
+                  selected: range == null && filter == 'previous',
+                  onTap: () => showStatus('previous'),
                 ),
               ],
             ),
@@ -75,15 +93,19 @@ class ClassesScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           sessionsAsync.when(
             data: (List<SessionModel> all) {
-              final List<SessionModel> sessions =
-                  all.where((SessionModel session) => session.status == filter).toList();
+              final List<SessionModel> sessions = range == null
+                  ? all.where((SessionModel session) => session.status == filter).toList()
+                  : (all.where((SessionModel session) => _inRange(session.date, range)).toList()
+                    ..sort((SessionModel a, SessionModel b) => a.date!.compareTo(b.date!)));
               if (sessions.isEmpty) {
                 return Padding(
                   padding: const EdgeInsets.only(top: 12),
                   child: Text(
-                    filter == 'upcoming'
-                        ? 'No upcoming sessions. Open Previous for earlier ones.'
-                        : 'Nothing in this view.',
+                    range != null
+                        ? 'No sessions between these dates.'
+                        : filter == 'upcoming'
+                            ? 'No upcoming sessions. Open Previous for earlier ones.'
+                            : 'Nothing in this view.',
                     style: AppTextStyles.muted,
                   ),
                 );
@@ -114,15 +136,25 @@ class ClassesScreen extends ConsumerWidget {
   }
 }
 
+bool _inRange(DateTime? date, DateTimeRange range) {
+  if (date == null) {
+    return false;
+  }
+  final DateTime day = DateTime(date.year, date.month, date.day);
+  return !day.isBefore(range.start) && !day.isAfter(range.end);
+}
+
 String _sessionRange(List<SessionModel> sessions) {
   final List<DateTime> dates = sessions.map((SessionModel session) => session.date).whereType<DateTime>().toList()..sort();
   if (dates.isEmpty) {
     return 'No sessions on file';
   }
+  return _rangeLabel(dates.first, dates.last);
+}
+
+String _rangeLabel(DateTime first, DateTime last) {
   const List<String> months = <String>['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   String label(DateTime date) => '${date.day} ${months[date.month - 1]} ${date.year}';
-  final DateTime first = dates.first;
-  final DateTime last = dates.last;
   if (first.year == last.year && first.month == last.month && first.day == last.day) {
     return label(first);
   }

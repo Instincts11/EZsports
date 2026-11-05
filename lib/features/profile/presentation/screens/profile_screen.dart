@@ -7,6 +7,7 @@ import 'package:ezsports/core/network/api_error.dart';
 import 'package:ezsports/core/utils/api_time.dart';
 import 'package:ezsports/features/auth/data/auth_repository.dart';
 import 'package:ezsports/features/profile/data/models/leave_model.dart';
+import 'package:ezsports/core/widgets/app_button.dart';
 import 'package:ezsports/core/widgets/cream_card.dart';
 import 'package:ezsports/core/auth/auth_session.dart';
 import 'package:ezsports/features/home/data/models/home_dashboard_model.dart';
@@ -100,7 +101,12 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 18),
                 const Text('My leaves', style: AppTextStyles.title),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
+                AppButton(
+                  label: 'Request leave',
+                  onPressed: () => _showRequestLeave(context, ref),
+                ),
+                const SizedBox(height: 10),
                 ...leaves.maybeWhen(
                   data: (List<LeaveModel> rows) => rows.isEmpty
                       ? <Widget>[const _FixtureLine('No leave requests')]
@@ -355,6 +361,130 @@ Future<void> _showCoachOverlay({
             );
           },
         ),
+      );
+    },
+  );
+}
+
+Future<void> _showRequestLeave(BuildContext pageContext, WidgetRef ref) {
+  DateTime? from;
+  DateTime? to;
+  final TextEditingController reason = TextEditingController();
+  String? error;
+  bool saving = false;
+
+  String labelFor(DateTime? date, String empty) {
+    if (date == null) {
+      return empty;
+    }
+    return formatApiDate(date.toIso8601String());
+  }
+
+  String iso(DateTime date) {
+    final String month = date.month.toString().padLeft(2, '0');
+    final String day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
+  }
+
+  return _showCoachOverlay(
+    pageContext: pageContext,
+    builder: (BuildContext overlayContext, void Function(void Function()) setState) {
+      Future<void> pick(bool start) async {
+        final DateTime now = DateTime.now();
+        final DateTime? picked = await showDatePicker(
+          context: overlayContext,
+          initialDate: (start ? from : to) ?? now,
+          firstDate: DateTime(now.year - 1),
+          lastDate: DateTime(now.year + 2),
+        );
+        if (picked == null) {
+          return;
+        }
+        setState(() {
+          if (start) {
+            from = picked;
+          } else {
+            to = picked;
+          }
+          error = null;
+        });
+      }
+
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          const Text('Request leave', style: TextStyle(fontSize: 22, color: AppColors.textPrimary, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 16),
+          OutlinedButton(
+            onPressed: () => pick(true),
+            child: Text(labelFor(from, 'From date'), style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton(
+            onPressed: () => pick(false),
+            child: Text(labelFor(to, 'To date'), style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: reason,
+            minLines: 2,
+            maxLines: 3,
+            style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
+            cursorColor: AppColors.primary,
+            decoration: _passwordDecoration('Reason'),
+          ),
+          if (error != null) ...<Widget>[
+            const SizedBox(height: 8),
+            Text(error!, style: const TextStyle(color: AppColors.primary)),
+          ],
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(overlayContext).pop(),
+                child: const Text('Cancel', style: TextStyle(color: AppColors.primaryDark, fontWeight: FontWeight.w700)),
+              ),
+              TextButton(
+                onPressed: saving
+                    ? null
+                    : () async {
+                        final String note = reason.text.trim();
+                        if (from == null || to == null || note.isEmpty) {
+                          setState(() => error = 'Choose both dates and a reason.');
+                          return;
+                        }
+                        if (to!.isBefore(from!)) {
+                          setState(() => error = 'The end date must be on or after the start date.');
+                          return;
+                        }
+                        setState(() {
+                          saving = true;
+                          error = null;
+                        });
+                        try {
+                          await ref.read(profileRepositoryProvider).requestLeave(
+                                fromDate: iso(from!),
+                                toDate: iso(to!),
+                                reason: note,
+                              );
+                        } catch (cause) {
+                          setState(() {
+                            saving = false;
+                            error = apiErrorMessage(cause, 'The leave request could not be sent.');
+                          });
+                          return;
+                        }
+                        ref.invalidate(coachLeavesProvider);
+                        if (overlayContext.mounted) {
+                          Navigator.of(overlayContext).pop();
+                        }
+                      },
+                child: Text(saving ? 'Sending…' : 'Send', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+        ],
       );
     },
   );

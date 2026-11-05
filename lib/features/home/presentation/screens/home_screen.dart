@@ -44,33 +44,13 @@ class HomeScreen extends ConsumerWidget {
           const SizedBox(height: 14),
           dashboard.maybeWhen(
             data: (HomeDashboardModel home) {
-              final bool hasNotice = home.notice.trim().isNotEmpty;
-              final bool hasPhone = home.phone.trim().isNotEmpty;
-              final bool hasAddress = home.address.trim().isNotEmpty;
-              if (!hasNotice && !hasPhone && !hasAddress) {
+              if (home.phone.trim().isEmpty) {
                 return const SizedBox.shrink();
               }
               return Padding(
                 padding: const EdgeInsets.only(bottom: 14),
                 child: CreamCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      if (hasNotice) ...<Widget>[
-                        const Text('Academy notice', style: AppTextStyles.title),
-                        const SizedBox(height: 6),
-                        Text(home.notice.trim(), style: AppTextStyles.body),
-                      ],
-                      if (hasPhone) ...<Widget>[
-                        if (hasNotice) const SizedBox(height: 8),
-                        Text(home.phone.trim(), style: AppTextStyles.body),
-                      ],
-                      if (hasAddress) ...<Widget>[
-                        const SizedBox(height: 4),
-                        Text(home.address.trim(), style: AppTextStyles.muted),
-                      ],
-                    ],
-                  ),
+                  child: Text(home.phone.trim(), style: AppTextStyles.body),
                 ),
               );
             },

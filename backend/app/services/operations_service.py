@@ -6,6 +6,7 @@ from app.core.dependencies import CurrentUser
 from app.core.exceptions import AppError, ConflictError, ForbiddenError
 from app.models import (
     Batch,
+    Coach,
     CoachAttendance,
     Enrollment,
     Match,
@@ -31,6 +32,13 @@ from app.schemas import (
 from app.services import require_record
 
 
+def _require_coach(db: Session, coach_id: int | None) -> None:
+    if coach_id is None:
+        return
+    if db.get(Coach, coach_id) is None:
+        raise AppError(422, "Choose a coach")
+
+
 def _batch_response(batch: Batch) -> BatchResponse:
     return BatchResponse(
         batch_id=batch.batch_id,
@@ -41,6 +49,9 @@ def _batch_response(batch: Batch) -> BatchResponse:
         meeting_point=batch.meeting_point,
         focus=batch.focus,
         kit=batch.kit,
+        description=batch.description,
+        coach_id=batch.coach_id,
+        coach_name=batch.coach.name if batch.coach is not None else None,
         student_count=len(batch.enrollments),
     )
 
@@ -48,11 +59,14 @@ def _batch_response(batch: Batch) -> BatchResponse:
 def create_batch(db: Session, current: CurrentUser, payload: BatchCreate) -> BatchResponse:
     if current.academy_id is None:
         raise ForbiddenError()
+    _require_coach(db, payload.coach_id)
     batch = Batch(
         academy_id=current.academy_id,
         name=payload.name,
         days=payload.days,
         sport=payload.sport,
+        description=payload.description,
+        coach_id=payload.coach_id,
     )
     db.add(batch)
     db.commit()
@@ -61,7 +75,7 @@ def create_batch(db: Session, current: CurrentUser, payload: BatchCreate) -> Bat
 
 
 def list_batches(db: Session, current: CurrentUser) -> list[BatchResponse]:
-    query = db.query(Batch).options(joinedload(Batch.enrollments))
+    query = db.query(Batch).options(joinedload(Batch.enrollments), joinedload(Batch.coach))
     if current.academy_id:
         query = query.filter(Batch.academy_id == current.academy_id)
     return [_batch_response(batch) for batch in query.all()]
@@ -75,6 +89,8 @@ def update_batch(db: Session, batch_id: int, payload: BatchUpdate) -> BatchRespo
     changes = payload.model_dump(exclude_unset=True)
     if not changes:
         raise AppError(422, "No batch changes were sent")
+    if "coach_id" in changes:
+        _require_coach(db, changes["coach_id"])
     for field, value in changes.items():
         setattr(batch, field, value)
     db.commit()
@@ -99,7 +115,10 @@ def list_enrollments(db: Session, student_id: int | None = None) -> list[Enrollm
 
 def get_batch(db: Session, batch_id: int) -> BatchResponse:
     batch = require_record(
-        db.query(Batch).options(joinedload(Batch.enrollments)).filter(Batch.batch_id == batch_id).first(),
+        db.query(Batch)
+        .options(joinedload(Batch.enrollments), joinedload(Batch.coach))
+        .filter(Batch.batch_id == batch_id)
+        .first(),
         "Batch not found",
     )
     return _batch_response(batch)

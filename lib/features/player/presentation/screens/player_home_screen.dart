@@ -67,30 +67,6 @@ class _PlayerHomeScreenState extends ConsumerState<PlayerHomeScreen> {
               ),
               const SizedBox(height: 14),
               _HomeHeader(data: data),
-              if (data.notice.trim().isNotEmpty) ...<Widget>[
-                const SizedBox(height: 14),
-                _NoticeCard(kicker: 'ACADEMY', title: data.academyName, body: data.notice.trim()),
-              ],
-              if (data.phone.trim().isNotEmpty || data.address.trim().isNotEmpty) ...<Widget>[
-                const SizedBox(height: 14),
-                _NoticeCard(
-                  kicker: 'CONTACT',
-                  title: data.phone.trim().isEmpty ? data.academyName : data.phone.trim(),
-                  body: data.address.trim().isEmpty ? 'Academy contact' : data.address.trim(),
-                ),
-              ],
-              if (data.todaySessions.isNotEmpty) ...<Widget>[
-                const SizedBox(height: 22),
-                const Text('Notification', style: AppTextStyles.heading),
-                const SizedBox(height: 10),
-                _NoticeCard(
-                  kicker: 'TODAY',
-                  title: '${data.todaySessions.first.session.batchName} · ${data.todaySessions.first.session.timeRange}',
-                  body: data.todaySessions.first.detail.isEmpty
-                      ? 'Your session is on the schedule for today.'
-                      : data.todaySessions.first.detail,
-                ),
-              ],
               const SizedBox(height: 22),
               Row(
                 children: <Widget>[
@@ -109,6 +85,16 @@ class _PlayerHomeScreenState extends ConsumerState<PlayerHomeScreen> {
                   ],
                 ),
               ),
+              if (data.todaySessions.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 22),
+                const Text('Notification', style: AppTextStyles.heading),
+                const SizedBox(height: 10),
+                _NoticeCard(
+                  kicker: 'TODAY',
+                  title: '${data.todaySessions.first.session.batchName} · ${data.todaySessions.first.session.timeRange}',
+                  body: data.todaySessions.first.detail,
+                ),
+              ],
               const SizedBox(height: 22),
               const Text('Today', style: AppTextStyles.heading),
               const SizedBox(height: 10),
@@ -183,6 +169,14 @@ class _PlayerHomeScreenState extends ConsumerState<PlayerHomeScreen> {
                   ),
                 ),
               ],
+              if (data.phone.trim().isNotEmpty) ...<Widget>[
+                const SizedBox(height: 22),
+                _NoticeCard(
+                  kicker: 'CONTACT',
+                  title: data.phone.trim(),
+                  body: '',
+                ),
+              ],
             ],
           );
         },
@@ -224,60 +218,35 @@ class _NotificationButton extends StatelessWidget {
   }
 }
 
-class _HomeHeader extends ConsumerWidget {
+class _HomeHeader extends StatelessWidget {
   const _HomeHeader({required this.data});
 
   final PlayerHomeModel data;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final PlayerSessionModel? current = data.todaySessions.where((PlayerSessionModel row) => !row.skipped).firstOrNull;
+  Widget build(BuildContext context) {
     final DateTime now = DateTime.now();
-    final Widget date = Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(_clock(now), style: AppTextStyles.bodyOnDark),
-          Text(formatApiDate(data.date), style: AppTextStyles.caption),
-        ],
-      ),
-    );
-    final Widget sessions = Column(
-      children: <Widget>[
-        Text('${data.sessionsToday}', style: const TextStyle(fontSize: 28, height: 1, fontWeight: FontWeight.w800, color: AppColors.textOnDark)),
-        const Text('Sessions', style: AppTextStyles.caption),
-      ],
-    );
     return Row(
       children: <Widget>[
         const Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.playerMuted),
         const SizedBox(width: 8),
-        date,
-        sessions,
-        if (current != null) ...<Widget>[
-          const SizedBox(width: 10),
-          CheckInButton(
-            checked: current.checkedIn,
-            onPressed: () => _saveResponse(
-              context,
-              () => respondToSession(ref, current.session.sessionId, checkedIn: !current.checkedIn),
-            ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(_clock(now), style: AppTextStyles.bodyOnDark),
+              Text(formatApiDate(data.date), style: AppTextStyles.caption),
+            ],
           ),
-        ],
+        ),
+        Column(
+          children: <Widget>[
+            Text('${data.sessionsToday}', style: const TextStyle(fontSize: 28, height: 1, fontWeight: FontWeight.w800, color: AppColors.textOnDark)),
+            const Text('Sessions', style: AppTextStyles.caption),
+          ],
+        ),
       ],
     );
-  }
-}
-
-Future<void> _saveResponse(BuildContext context, Future<void> Function() save) async {
-  try {
-    await save();
-  } catch (_) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not save. Check your connection and try again.')),
-      );
-    }
   }
 }
 
@@ -357,8 +326,10 @@ class _NoticeCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.playerInk)),
-          const SizedBox(height: 4),
-          Text(body, style: const TextStyle(color: Color(0xFF5C564E), height: 1.35)),
+          if (body.trim().isNotEmpty) ...<Widget>[
+            const SizedBox(height: 4),
+            Text(body, style: const TextStyle(color: Color(0xFF5C564E), height: 1.35)),
+          ],
         ],
       ),
     );

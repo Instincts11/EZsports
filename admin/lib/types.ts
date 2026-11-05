@@ -47,6 +47,9 @@ export type Batch = {
   meeting_point: string | null;
   focus: string | null;
   kit: string | null;
+  description: string | null;
+  coach_id: number | null;
+  coach_name: string | null;
   student_count: number;
 };
 

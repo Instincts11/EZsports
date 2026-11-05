@@ -269,15 +269,15 @@ export function PlayerEditor({
           hints={
             tab === "home"
               ? {
-                  sessions: "Today's session card on the player home. The academy notice is edited on Academy.",
-                  fixtures: "The next fixture on the player home. The full list is on Fixtures.",
+                  sessions: "The four most recent sessions. History shows the earlier ones.",
+                  fixtures: "The four most recent fixtures. History shows the earlier ones.",
                 }
               : tab === "fixtures"
-                ? { fixtures: "Shown on the player Fixtures tab for this player's batches." }
+                ? { fixtures: "The four most recent fixtures. History shows the earlier ones." }
                 : tab === "schedule"
                   ? {
                       batch: "Batch name, meeting point, and focus appear on the player schedule.",
-                      sessions: "Date, ground, and note appear on the player schedule.",
+                      sessions: "The four most recent sessions. History shows the earlier ones.",
                     }
                   : { fee: "Shown on this player's profile for the coach." }
           }

@@ -50,6 +50,8 @@ def ensure_runtime_schema() -> None:
     _add_column_if_missing("batches", "kit", "kit VARCHAR(255)")
     _add_column_if_missing("batches", "meeting_point", "meeting_point VARCHAR(255)")
     _add_column_if_missing("batches", "focus", "focus VARCHAR(255)")
+    _add_column_if_missing("batches", "description", "description TEXT")
+    _add_column_if_missing("batches", "coach_id", "coach_id INTEGER")
     _add_column_if_missing("coaches", "headline", "headline VARCHAR(255)")
     _add_column_if_missing("students", "coach_note", "coach_note VARCHAR(500)")
     _ensure_bill_parties()

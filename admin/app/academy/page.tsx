@@ -25,7 +25,6 @@ function AcademyDesk() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
-  const [sport, setSport] = useState("");
   const [academyNotice, setAcademyNotice] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -45,7 +44,6 @@ function AcademyDesk() {
       .then(([nextAcademy, nextAdmins, nextCoaches, nextPlayers, nextBatches]) => {
         setAcademy(nextAcademy);
         setName(nextAcademy.name);
-        setSport(nextAcademy.sport);
         setAcademyNotice(nextAcademy.notice ?? "");
         setPhone(nextAcademy.phone ?? "");
         setAddress(nextAcademy.address ?? "");
@@ -78,12 +76,11 @@ function AcademyDesk() {
             setNotice("");
             api<Academy>("/academy", {
               method: "PATCH",
-              body: JSON.stringify({ name, sport, notice: academyNotice, phone, address }),
+              body: JSON.stringify({ name, notice: academyNotice, phone, address }),
             })
               .then((saved) => {
                 setAcademy(saved);
                 setName(saved.name);
-                setSport(saved.sport);
                 setAcademyNotice(saved.notice ?? "");
                 setPhone(saved.phone ?? "");
                 setAddress(saved.address ?? "");
@@ -103,36 +100,15 @@ function AcademyDesk() {
               className="w-full rounded-xl border border-line bg-card px-3 py-2 text-sm outline-none focus:border-terracotta"
             />
           </label>
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted">Sport</span>
-            <input
-              value={sport}
-              onChange={(event) => setSport(event.target.value)}
-              className="w-full rounded-xl border border-line bg-card px-3 py-2 text-sm outline-none focus:border-terracotta"
-            />
-          </label>
-          <label className="block">
+          <div className="block">
+            <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted">Coaches</span>
+            <p className="w-full rounded-xl border border-line bg-card px-3 py-2 text-sm">{coaches.length}</p>
+          </div>
+          <label className="block sm:col-span-2">
             <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted">Phone on coach and player home</span>
             <input
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
-              className="w-full rounded-xl border border-line bg-card px-3 py-2 text-sm outline-none focus:border-terracotta"
-            />
-          </label>
-          <label className="block sm:col-span-2">
-            <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted">Address on coach and player profile</span>
-            <input
-              value={address}
-              onChange={(event) => setAddress(event.target.value)}
-              className="w-full rounded-xl border border-line bg-card px-3 py-2 text-sm outline-none focus:border-terracotta"
-            />
-          </label>
-          <label className="block sm:col-span-2">
-            <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted">Notice on coach and player home</span>
-            <textarea
-              value={academyNotice}
-              rows={3}
-              onChange={(event) => setAcademyNotice(event.target.value)}
               className="w-full rounded-xl border border-line bg-card px-3 py-2 text-sm outline-none focus:border-terracotta"
             />
           </label>
@@ -178,12 +154,9 @@ function AcademyDesk() {
             {batches.map((batch) => (
               <article key={batch.batch_id} className="rounded-2xl border border-line bg-card px-4 py-4">
                 <h3 className="font-serif text-xl">{batch.name}</h3>
-                <p className="mt-1 text-sm text-muted">{batch.sport}</p>
-                <p className="mt-2 text-sm">{batch.days}</p>
-                {batch.meeting_point ? <p className="mt-1 text-sm">Meet at {batch.meeting_point}</p> : null}
-                {batch.focus ? <p className="mt-1 text-sm">{batch.focus}</p> : null}
-                {batch.kit ? <p className="mt-1 text-sm">Kit: {batch.kit}</p> : null}
-                <p className="mt-1 text-sm">{batch.student_count} players</p>
+                <p className="mt-1 text-sm">{batch.coach_name || "No coach"}</p>
+                <p className="mt-1 text-sm text-muted">{batch.description || "No description"}</p>
+                <p className="mt-2 text-sm">{batch.student_count} students</p>
               </article>
             ))}
             {!loading && batches.length === 0 ? <p className="text-sm text-muted">No batches yet.</p> : null}

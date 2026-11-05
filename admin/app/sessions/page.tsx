@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import { AuthGate } from "@/components/auth-gate";
 import { DateInput } from "@/components/date-input";
 import { DeskShell } from "@/components/desk-shell";
@@ -23,6 +24,63 @@ type Draft = {
 
 function clock(value: string) {
   return value ? value.slice(0, 5) : "";
+}
+
+export function sessionGroupKey(session: TrainingSession) {
+  return String(session.batch_id);
+}
+
+function sessionStart(session: TrainingSession) {
+  return new Date(`${session.date.slice(0, 10)}T${clock(session.start) || "00:00"}`).getTime();
+}
+
+function sessionEnd(session: TrainingSession) {
+  const start = sessionStart(session);
+  let end = new Date(`${session.date.slice(0, 10)}T${clock(session.end) || "23:59"}`).getTime();
+  if (Number.isNaN(end)) return start;
+  if (end < start) end += 24 * 60 * 60 * 1000;
+  return end;
+}
+
+function markedSessions(sessions: TrainingSession[], now = Date.now()) {
+  if (sessions.length === 0) return { currentId: null as number | null, latestId: null as number | null };
+  const latest = sessions.reduce((best, session) => (sessionStart(session) > sessionStart(best) ? session : best));
+  const ongoing = sessions.find((session) => sessionStart(session) <= now && now <= sessionEnd(session));
+  const started = sessions
+    .filter((session) => sessionStart(session) <= now)
+    .sort((left, right) => sessionStart(right) - sessionStart(left));
+  const upcoming = sessions
+    .filter((session) => sessionStart(session) > now)
+    .sort((left, right) => sessionStart(left) - sessionStart(right));
+  const current = ongoing ?? started[0] ?? upcoming[0] ?? latest;
+  return { currentId: current.session_id, latestId: latest.session_id };
+}
+
+type SessionGroup = {
+  key: string;
+  label: string;
+  sessions: TrainingSession[];
+};
+
+function groupSessions(sessions: TrainingSession[]): SessionGroup[] {
+  const grouped = new Map<string, TrainingSession[]>();
+  for (const session of sessions) {
+    const key = sessionGroupKey(session);
+    const rows = grouped.get(key) ?? [];
+    rows.push(session);
+    grouped.set(key, rows);
+  }
+  return [...grouped.entries()]
+    .map(([key, rows]) => {
+      const ordered = [...rows].sort((left, right) => sessionStart(right) - sessionStart(left));
+      const sample = ordered[0];
+      return {
+        key,
+        label: sample.batch_name || "Session",
+        sessions: ordered,
+      };
+    })
+    .sort((left, right) => left.label.localeCompare(right.label));
 }
 
 function toDraft(session: TrainingSession): Draft {
@@ -53,7 +111,7 @@ export default function SessionsPage() {
   );
 }
 
-function SessionDesk() {
+export function SessionDesk({ group }: { group?: string }) {
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [coaches, setCoaches] = useState<Coach[]>([]);
@@ -211,13 +269,17 @@ function SessionDesk() {
     }
   }
 
+  const groups = groupSessions(sessions);
+  const selected = group ? groups.find((item) => item.key === group) : undefined;
+  const marks = markedSessions(selected?.sessions ?? []);
+
   return (
     <DeskShell active="sessions" mode="admin">
       <div className="flex-1 overflow-y-auto px-5 py-6">
         <p className="text-xs font-bold tracking-[0.18em] text-terracotta">ACADEMY SETUP</p>
         <h1 className="mt-2 font-serif text-4xl font-medium">Sessions</h1>
         <p className="mt-2 max-w-xl text-sm text-muted">
-          Add a session, update the ground and note, and assign or remove coaches.
+          Each batch is one session. Open it to see every date. Current and latest dates are highlighted.
         </p>
         {loading ? <p className="mt-6 text-sm text-muted">Loading sessions</p> : null}
         {error ? <p className="mt-4 text-sm text-terracotta">{error}</p> : null}
@@ -293,14 +355,38 @@ function SessionDesk() {
           </div>
         </form>
 
-        <div className="mt-6 flex max-w-3xl flex-col gap-4 min-[1300px]:max-w-none">
-          {sessions.map((session) => {
+        <div className="mt-6 max-w-3xl overflow-hidden rounded-2xl border border-line bg-card min-[1300px]:max-w-none">
+        <SessionTabs groups={groups} selected={group} />
+
+        <div className="flex flex-col gap-4 p-4">
+          {!group ? <p className="text-sm text-muted">Choose a session to see its dates.</p> : null}
+          {group && !selected && !loading ? <p className="text-sm text-muted">This session was not found.</p> : null}
+          {(selected?.sessions ?? []).map((session) => {
             const draft = drafts[session.session_id] ?? toDraft(session);
             const assigned = new Set(session.coaches.map((coach) => coach.coach_id));
             const available = coaches.filter((coach) => !assigned.has(coach.coach_id));
+            const badges = [
+              session.session_id === marks.currentId ? "Current" : "",
+              session.session_id === marks.latestId ? "Latest" : "",
+            ].filter(Boolean);
             return (
-              <div key={session.session_id} className="grid gap-3 rounded-2xl border border-line bg-card p-4 sm:grid-cols-2">
-                <p className="font-serif text-2xl sm:col-span-2">{session.batch_name || "Session"}</p>
+              <div
+                key={session.session_id}
+                className={`grid gap-3 rounded-2xl border p-4 sm:grid-cols-2 ${
+                  badges.length > 0 ? "border-terracotta bg-cream ring-2 ring-terracotta/30" : "border-line bg-card"
+                }`}
+              >
+                <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+                  <p className="font-serif text-2xl">{session.batch_name || "Session"}</p>
+                  <p className="text-sm text-muted">
+                    {draft.date} · {draft.start}–{draft.end}
+                  </p>
+                  {badges.map((badge) => (
+                    <span key={badge} className="rounded-full bg-terracotta px-2.5 py-0.5 text-xs font-bold text-white">
+                      {badge}
+                    </span>
+                  ))}
+                </div>
                 <label className="block sm:col-span-2">
                   <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted">Batch</span>
                   <select
@@ -415,7 +501,33 @@ function SessionDesk() {
             );
           })}
         </div>
+        </div>
       </div>
     </DeskShell>
+  );
+}
+
+function SessionTabs({ groups, selected }: { groups: SessionGroup[]; selected?: string }) {
+  if (groups.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-2 border-b border-line bg-cream/60 p-3" role="tablist" aria-label="Sessions">
+      {groups.map((item) => {
+        const active = item.key === selected;
+        return (
+          <Link
+            key={item.key}
+            href={`/sessions/${item.key}`}
+            role="tab"
+            aria-selected={active}
+            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              active ? "bg-terracotta text-white" : "border border-line bg-card text-ink-text hover:border-terracotta"
+            }`}
+          >
+            {item.label}
+            <span className={active ? "text-white/80" : "text-muted"}> {item.sessions.length}</span>
+          </Link>
+        );
+      })}
+    </div>
   );
 }

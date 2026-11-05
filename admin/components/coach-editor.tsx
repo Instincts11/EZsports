@@ -187,7 +187,7 @@ export function CoachEditor({
         </Section>
         <SaveBar pending={pending} notice={notice} error={error} />
         </form>
-        ) : null}
+        ) : (
         <PageContent
           kind="coach"
           personId={baseline.coach_id}
@@ -197,32 +197,27 @@ export function CoachEditor({
               ? ["batch", "sessions"]
               : tab === "fixtures"
                 ? ["fixtures"]
-                : tab === "sessions"
-                  ? ["sessions", "leave"]
-                  : ["fee"]
+                : ["sessions"]
           }
           titles={
             tab === "home"
               ? { batch: "Batch on the home card", sessions: "Home" }
               : tab === "fixtures"
                 ? { fixtures: "Fixtures" }
-                : tab === "sessions"
-                  ? { sessions: "Sessions" }
-                  : { fee: "Fee" }
+                : { sessions: "Sessions" }
           }
           hints={
             tab === "home"
               ? {
                   batch: "Meeting point and focus appear on the coach home session card.",
-                  sessions: "Ground, time, and note appear on the coach home. The academy notice is edited on Academy.",
+                  sessions: "The four most recent sessions. History shows the earlier ones.",
                 }
               : tab === "fixtures"
-                ? { fixtures: "These fixtures appear on the coach Fixtures tab and on the player Fixtures tab for that batch." }
-                : tab === "sessions"
-                  ? { sessions: "This is the coach Sessions tab, including attendance." }
-                  : { fee: "Shown when this coach has a fee." }
+                ? { fixtures: "The four most recent fixtures. History shows the earlier ones." }
+                : { sessions: "The four most recent sessions, including attendance. History shows the earlier ones." }
           }
         />
+        )}
       </div>
     </div>
   );

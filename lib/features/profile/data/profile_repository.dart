@@ -10,6 +10,22 @@ class ProfileRepository {
     return rows.map((dynamic row) => LeaveModel.fromJson(row as Map<String, dynamic>)).toList();
   }
 
+  Future<LeaveModel> requestLeave({
+    required String fromDate,
+    required String toDate,
+    required String reason,
+  }) async {
+    final response = await DioClient.instance.post(
+      ApiEndpoints.leaves,
+      data: <String, String>{
+        'from_date': fromDate,
+        'to_date': toDate,
+        'reason': reason,
+      },
+    );
+    return LeaveModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<CoachProfileModel> fetchProfile() async {
     final response = await DioClient.instance.get(ApiEndpoints.profile);
     return CoachProfileModel.fromJson(response.data as Map<String, dynamic>);

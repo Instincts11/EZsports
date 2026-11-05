@@ -1,5 +1,6 @@
 import 'package:ezsports/features/classes/data/classes_repository.dart';
 import 'package:ezsports/features/classes/data/models/session_model.dart';
+import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final classesRepositoryProvider = Provider<ClassesRepository>((Ref ref) {
@@ -11,3 +12,5 @@ final sessionsProvider = FutureProvider.autoDispose<List<SessionModel>>((Ref ref
 });
 
 final sessionFilterProvider = StateProvider<String>((Ref ref) => 'upcoming');
+
+final sessionRangeProvider = StateProvider<DateTimeRange?>((Ref ref) => null);

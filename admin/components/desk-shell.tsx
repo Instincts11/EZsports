@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DateRangeButton } from "@/components/date-range-popup";
+import { LeaveNotifications } from "@/components/leave-notifications";
 import { api } from "@/lib/api";
 import { clearToken } from "@/lib/session";
 import type { Me } from "@/lib/types";
@@ -153,7 +154,14 @@ export function DeskShell({
           </button>
         </div>
       </aside>
-      <div className="desk-content relative flex min-h-0 min-w-0 flex-1 flex-col bg-cream">{children}</div>
+      <div className="desk-content relative flex min-h-0 min-w-0 flex-1 flex-col bg-cream">
+        {mode === "admin" ? (
+          <div className="relative z-30 flex justify-end px-5 pt-3">
+            <LeaveNotifications />
+          </div>
+        ) : null}
+        {children}
+      </div>
     </div>
   );
 }

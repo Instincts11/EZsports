@@ -4,12 +4,14 @@ import 'package:ezsports/core/constants/app_strings.dart';
 import 'package:ezsports/core/constants/app_text_styles.dart';
 import 'package:ezsports/core/widgets/brand_mark.dart';
 import 'package:ezsports/core/utils/api_time.dart';
+import 'package:ezsports/features/classes/providers/classes_providers.dart';
 import 'package:ezsports/features/home/data/models/home_dashboard_model.dart';
 import 'package:ezsports/features/home/presentation/widgets/date_overlay.dart';
 import 'package:ezsports/features/home/providers/home_providers.dart';
 import 'package:ezsports/features/profile/presentation/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeHeader extends ConsumerWidget {
   const HomeHeader({super.key});
@@ -40,11 +42,16 @@ class HomeHeader extends ConsumerWidget {
             if (!context.mounted) {
               return;
             }
-            showCoachDateOverlay(
+            final DateTimeRange? picked = await showCoachDateOverlay(
               context,
               rangeStart: parseApiDate(latest.rangeStart),
               rangeEnd: parseApiDate(latest.rangeEnd),
             );
+            if (picked == null || !context.mounted) {
+              return;
+            }
+            ref.read(sessionRangeProvider.notifier).state = picked;
+            context.go('/sessions');
           },
           icon: const Icon(AppIcons.calendar, color: AppColors.cardBeige),
         ),
