@@ -45,8 +45,11 @@ def assign_accountant(db: Session, current: CurrentUser, payload: AccountantCrea
     existing = db.query(Accountant).filter(Accountant.admin_id == current.admin_id).first()
     if existing:
         raise ConflictError("This academy already has an accountant")
+    mobile = _contact_key(payload.mobile)
+    if mobile and _contact_taken(db, mobile, None):
+        raise ConflictError("This contact number is already registered")
     user = create_login_user(db, payload.email, payload.password, UserRole.ACCOUNTANT)
-    accountant = Accountant(user_id=user.user_id, admin_id=current.admin_id, name=payload.name)
+    accountant = Accountant(user_id=user.user_id, admin_id=current.admin_id, name=payload.name, mobile=mobile)
     db.add(accountant)
     db.commit()
     db.refresh(accountant)
@@ -59,6 +62,7 @@ def _accountant_response(accountant: Accountant) -> AccountantResponse:
         admin_id=accountant.admin_id,
         name=accountant.name,
         email=accountant.user.email if accountant.user else None,
+        mobile=accountant.mobile,
         assigned_at=accountant.assigned_at,
     )
 
@@ -341,6 +345,11 @@ def update_accountant(db: Session, accountant_id: int, payload: AccountantUpdate
     changes = payload.model_dump(exclude_unset=True)
     email = changes.pop("email", None)
     password = _clean_password(changes.pop("password", None))
+    if "mobile" in changes:
+        mobile = _contact_key(changes.pop("mobile"))
+        if mobile and _contact_taken(db, mobile, accountant.user_id):
+            raise ConflictError("This contact number is already registered")
+        accountant.mobile = mobile
     for field, value in changes.items():
         setattr(accountant, field, value)
     if password is not None:
@@ -369,6 +378,28 @@ def delete_accountant(db: Session, accountant_id: int) -> None:
     if user is not None:
         db.delete(user)
     db.commit()
+
+
+def _contact_key(raw: str | None) -> str | None:
+    if raw is None:
+        return None
+    digits = "".join(ch for ch in raw if ch.isdigit())
+    if not digits:
+        return None
+    if len(digits) < 10:
+        raise AppError(status.HTTP_400_BAD_REQUEST, "Enter a valid contact number")
+    return digits[-10:]
+
+
+def _contact_taken(db: Session, mobile: str, except_user_id: int | None) -> bool:
+    coaches = db.query(Coach).filter(func.substr(Coach.mobile, -10) == mobile).all()
+    students = db.query(Student).filter(func.substr(Student.mobile, -10) == mobile).all()
+    admins = db.query(SuperAdmin).filter(func.substr(SuperAdmin.mobile, -10) == mobile).all()
+    accountants = db.query(Accountant).filter(func.substr(Accountant.mobile, -10) == mobile).all()
+    return any(
+        record.user_id != except_user_id
+        for record in (*coaches, *students, *admins, *accountants)
+    )
 
 
 def _blank(value: str | None) -> str | None:

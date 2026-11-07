@@ -17,6 +17,7 @@ export type Accountant = {
   admin_id: number;
   name: string;
   email: string | null;
+  mobile: string | null;
   assigned_at: string | null;
 };
 

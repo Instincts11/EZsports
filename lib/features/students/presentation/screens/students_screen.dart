@@ -13,7 +13,7 @@ class StudentsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<List<MatchModel>> matches = ref.watch(matchesProvider);
+    final AsyncValue<List<MatchModel>> matches = watchMatches(ref);
 
     return SafeArea(
       bottom: false,

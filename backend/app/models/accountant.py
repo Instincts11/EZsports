@@ -21,6 +21,7 @@ class Accountant(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"), unique=True)
     admin_id: Mapped[int] = mapped_column(ForeignKey("super_admins.admin_id"))
     name: Mapped[str] = mapped_column(String(255))
+    mobile: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
     assigned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user: Mapped["User"] = relationship(back_populates="accountant")

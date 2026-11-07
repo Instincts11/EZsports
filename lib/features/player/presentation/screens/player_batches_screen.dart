@@ -14,7 +14,7 @@ class PlayerBatchesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<List<MatchModel>> matches = ref.watch(playerMatchesProvider);
+    final AsyncValue<List<MatchModel>> matches = watchPlayerMatches(ref);
     return SafeArea(
       bottom: false,
       child: matches.when(

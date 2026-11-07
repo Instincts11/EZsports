@@ -10,13 +10,13 @@ export function AuthGate({
   allow,
   children,
 }: {
-  allow: "super_admin" | "accountant";
+  allow: "super_admin" | "accountant" | "admin_or_accountant";
   children: React.ReactNode;
 }) {
   const router = useRouter();
   const token = useSessionToken();
   const [role, setRole] = useState<string | null>(null);
-
+                                                         
   useEffect(() => {
     if (!token) {
       router.replace("/");
@@ -27,7 +27,11 @@ export function AuthGate({
       .then((me) => {
         if (!active) return;
         setRole(me.role);
-        if (me.role !== allow) {
+        const allowed =
+          allow === "admin_or_accountant"
+            ? me.role === "super_admin" || me.role === "accountant"
+            : me.role === allow;
+        if (!allowed) {
           router.replace(me.role === "accountant" ? "/fees" : "/academy");
         }
       })
@@ -39,7 +43,9 @@ export function AuthGate({
     };
   }, [allow, router, token]);
 
-  if (!token || role !== allow) {
+  const allowed =
+    allow === "admin_or_accountant" ? role === "super_admin" || role === "accountant" : role === allow;
+  if (!token || !allowed) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-ink">
         <p className="text-xs font-bold tracking-[0.2em] text-terracotta">ID SPORTS</p>

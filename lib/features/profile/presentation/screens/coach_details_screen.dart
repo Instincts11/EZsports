@@ -105,7 +105,7 @@ class _CoachDetailsScreenState extends ConsumerState<CoachDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<CoachProfileModel> profile = ref.watch(coachProfileProvider);
+    final AsyncValue<CoachProfileModel> profile = watchCoachProfile(ref);
     profile.whenData(_apply);
 
     return Scaffold(

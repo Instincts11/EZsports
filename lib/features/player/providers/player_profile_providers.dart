@@ -1,3 +1,6 @@
+import 'package:ezsports/core/network/api_endpoints.dart';
+import 'package:ezsports/core/storage/response_cache.dart';
+import 'package:ezsports/core/storage/stored_async.dart';
 import 'package:ezsports/features/player/data/models/player_profile_model.dart';
 import 'package:ezsports/features/player/data/player_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,12 +16,18 @@ const PlayerProfileModel starterPlayerProfile = PlayerProfileModel(
 );
 
 final playerDraftProvider = StateProvider<PlayerProfileModel>((Ref ref) {
-  return starterPlayerProfile;
+  return ResponseCache.map(ApiEndpoints.playerProfile, PlayerProfileModel.fromJson) ?? starterPlayerProfile;
 });
 
-final playerProfileProvider = FutureProvider.autoDispose<PlayerProfileModel>((Ref ref) async {
+final playerProfileProvider = FutureProvider<PlayerProfileModel>((Ref ref) async {
   return ref.watch(playerRepositoryProvider).getProfile();
 });
+
+AsyncValue<PlayerProfileModel> watchPlayerProfile(WidgetRef ref) {
+  return ref.watch(playerProfileProvider).orStored(
+        ResponseCache.map(ApiEndpoints.playerProfile, PlayerProfileModel.fromJson),
+      );
+}
 
 Future<void> refreshPlayerDraft(WidgetRef ref) async {
   try {

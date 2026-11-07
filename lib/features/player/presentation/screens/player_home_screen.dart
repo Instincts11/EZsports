@@ -31,7 +31,7 @@ class _PlayerHomeScreenState extends ConsumerState<PlayerHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<PlayerHomeModel> home = ref.watch(playerHomeProvider);
+    final AsyncValue<PlayerHomeModel> home = watchPlayerHome(ref);
     final String draftName = ref.watch(playerDraftProvider).name;
     return SafeArea(
       bottom: false,

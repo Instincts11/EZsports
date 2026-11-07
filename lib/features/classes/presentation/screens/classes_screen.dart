@@ -1,3 +1,4 @@
+import 'package:ezsports/core/storage/app_store.dart';
 import 'package:ezsports/core/constants/app_colors.dart';
 import 'package:ezsports/core/constants/app_icons.dart';
 import 'package:ezsports/core/constants/app_sizes.dart';
@@ -17,11 +18,13 @@ class ClassesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final String filter = ref.watch(sessionFilterProvider);
     final DateTimeRange? range = ref.watch(sessionRangeProvider);
-    final AsyncValue<List<SessionModel>> sessionsAsync = ref.watch(sessionsProvider);
+    final AsyncValue<List<SessionModel>> sessionsAsync = watchSessions(ref);
 
     void showStatus(String status) {
       ref.read(sessionRangeProvider.notifier).state = null;
       ref.read(sessionFilterProvider.notifier).state = status;
+      AppStore.saveRange(null, null);
+      AppStore.saveSessionFilter(status);
     }
 
     return SafeArea(
@@ -56,7 +59,10 @@ class ClassesScreen extends ConsumerWidget {
                     if (range != null) ...<Widget>[
                       const SizedBox(width: 6),
                       GestureDetector(
-                        onTap: () => ref.read(sessionRangeProvider.notifier).state = null,
+                        onTap: () {
+                          ref.read(sessionRangeProvider.notifier).state = null;
+                          AppStore.saveRange(null, null);
+                        },
                         child: const Icon(Icons.close, size: 16, color: AppColors.primary),
                       ),
                     ],

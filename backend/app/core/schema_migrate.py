@@ -38,6 +38,7 @@ def ensure_runtime_schema() -> None:
     for column, ddl in student_columns:
         _add_column_if_missing("students", column, ddl)
     _add_column_if_missing("super_admins", "mobile", "mobile VARCHAR(20)")
+    _add_column_if_missing("accountants", "mobile", "mobile VARCHAR(20)")
     _add_column_if_missing("sessions", "ground", "ground VARCHAR(255)")
     _add_column_if_missing("sessions", "note", "note VARCHAR(500)")
     _add_column_if_missing("matches", "venue", "venue VARCHAR(255)")

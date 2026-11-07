@@ -27,7 +27,7 @@ class _PlayerScheduleScreenState extends ConsumerState<PlayerScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<List<PlayerSessionModel>> sessions = ref.watch(playerSessionsProvider);
+    final AsyncValue<List<PlayerSessionModel>> sessions = watchPlayerSessions(ref);
     final DateTime today = DateTime.now();
     final DateTime start = DateTime(today.year, today.month, today.day);
     final List<DateTime> days = List<DateTime>.generate(7, (int index) => start.add(Duration(days: index)));

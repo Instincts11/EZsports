@@ -23,7 +23,7 @@ class _PlayersScreenState extends ConsumerState<PlayersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<List<StudentModel>> players = ref.watch(playersProvider);
+    final AsyncValue<List<StudentModel>> players = watchPlayers(ref);
 
     return SafeArea(
       child: ListView(

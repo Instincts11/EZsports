@@ -1,10 +1,13 @@
+import 'package:ezsports/core/auth/auth_session.dart';
 import 'package:ezsports/core/config/app_router.dart';
 import 'package:ezsports/core/theme/app_theme.dart';
 import 'package:ezsports/core/widgets/mobile_viewport.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await AuthSession.init();
   runApp(const ProviderScope(child: EzSportsApp()));
 }
 

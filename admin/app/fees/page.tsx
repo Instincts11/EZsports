@@ -6,7 +6,7 @@ import { DateInput } from "@/components/date-input";
 import { DeskShell } from "@/components/desk-shell";
 import { ApiError, api } from "@/lib/api";
 import { formatDate, initials, rupees } from "@/lib/format";
-import type { Bill, Coach, Student } from "@/lib/types";
+import type { Bill, Coach, Me, Student } from "@/lib/types";
 
 type Kind = "player" | "coach";
 
@@ -22,7 +22,7 @@ const statuses = ["due", "paid", "overdue"] as const;
 
 export default function FeesPage() {
   return (
-    <AuthGate allow="accountant">
+    <AuthGate allow="admin_or_accountant">
       <FeeDesk />
     </AuthGate>
   );
@@ -35,10 +35,15 @@ function FeeDesk() {
   const [kind, setKind] = useState<Kind>("player");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Account | null>(null);
+  const [adding, setAdding] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [mode, setMode] = useState<"admin" | "accountant">("accountant");
 
   useEffect(() => {
+    api<Me>("/auth/me")
+      .then((me) => setMode(me.role === "super_admin" ? "admin" : "accountant"))
+      .catch(() => setMode("accountant"));
     Promise.all([api<Student[]>("/students"), api<Coach[]>("/coaches"), api<Bill[]>("/bills")])
       .then(([nextPlayers, nextCoaches, nextBills]) => {
         setPlayers(nextPlayers);
@@ -89,13 +94,25 @@ function FeeDesk() {
   }
 
   return (
-    <DeskShell active="fees" mode="accountant">
+    <DeskShell active="fees" mode={mode}>
       <div className="flex min-h-0 flex-1">
         <section
-          className={`${selected ? "hidden lg:flex" : "flex"} w-full shrink-0 flex-col border-line lg:w-[360px] lg:border-r min-[1920px]:w-[440px]`}
+          className={`${selected || adding ? "hidden lg:flex" : "flex"} w-full shrink-0 flex-col border-line lg:w-[360px] lg:border-r min-[1920px]:w-[440px]`}
         >
           <div className="border-b border-line px-4 py-4">
-            <h1 className="font-serif text-3xl font-medium">Fees</h1>
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="font-serif text-3xl font-medium">Fees</h1>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelected(null);
+                  setAdding(true);
+                }}
+                className="rounded-xl bg-terracotta px-3 py-2 text-sm font-bold text-white hover:bg-terracotta-dark"
+              >
+                Add
+              </button>
+            </div>
             <p className="mt-1 text-sm text-muted">{loading ? "Loading" : "Player and coach accounts"}</p>
             <div className="mt-4 flex gap-2">
               <TabButton active={kind === "player"} onClick={() => { setKind("player"); setSelected(null); }}>
@@ -123,7 +140,10 @@ function FeeDesk() {
                 <button
                   key={`${account.kind}-${account.id}`}
                   type="button"
-                  onClick={() => setSelected(account)}
+                  onClick={() => {
+                    setAdding(false);
+                    setSelected(account);
+                  }}
                   className={`rounded-2xl border px-3 py-3 text-left ${
                     active ? "border-terracotta bg-card" : "border-line bg-card/70 hover:bg-card"
                   }`}
@@ -147,8 +167,23 @@ function FeeDesk() {
             })}
           </div>
         </section>
-        <section className={`${selected ? "flex" : "hidden lg:flex"} min-w-0 flex-1 flex-col`}>
-          {selected ? (
+        <section className={`${selected || adding ? "flex" : "hidden lg:flex"} min-w-0 flex-1 flex-col`}>
+          {adding ? (
+            <AddFeeForm
+              key={kind}
+              accounts={accounts}
+              kind={kind}
+              onBack={() => setAdding(false)}
+              onSaved={(saved, account) => {
+                setBills((rows) => {
+                  const rest = rows.filter((row) => row.bill_id !== saved.bill_id);
+                  return [saved, ...rest].sort((a, b) => b.due_date.localeCompare(a.due_date));
+                });
+                setAdding(false);
+                setSelected(account);
+              }}
+            />
+          ) : selected ? (
             <FeeEditor
               key={`${selected.kind}-${selected.id}`}
               account={selected}
@@ -169,6 +204,149 @@ function FeeDesk() {
         </section>
       </div>
     </DeskShell>
+  );
+}
+
+function AddFeeForm({
+  accounts,
+  kind,
+  onBack,
+  onSaved,
+}: {
+  accounts: Account[];
+  kind: Kind;
+  onBack: () => void;
+  onSaved: (bill: Bill, account: Account) => void;
+}) {
+  const [accountId, setAccountId] = useState(accounts[0] ? String(accounts[0].id) : "");
+  const [amount, setAmount] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [status, setStatus] = useState("due");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault();
+    const account = accounts.find((item) => String(item.id) === accountId);
+    if (!account) {
+      setError(kind === "player" ? "Choose a player." : "Choose a coach.");
+      return;
+    }
+    const parsed = Number(amount);
+    if (!amount.trim() || Number.isNaN(parsed) || parsed <= 0) {
+      setError("Enter a fee amount greater than zero.");
+      return;
+    }
+    if (!dueDate) {
+      setError("Choose a due date.");
+      return;
+    }
+    setPending(true);
+    setError("");
+    try {
+      const saved = await api<Bill>("/bills", {
+        method: "POST",
+        body: JSON.stringify({
+          amount: parsed,
+          due_date: dueDate,
+          status,
+          student_id: account.kind === "player" ? account.id : null,
+          coach_id: account.kind === "coach" ? account.id : null,
+        }),
+      });
+      onSaved(saved, account);
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : "The fee could not be saved.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+      <div className="flex items-center gap-3 border-b border-line px-5 py-4">
+        <button type="button" onClick={onBack} className="text-sm font-semibold text-terracotta lg:hidden">
+          Back
+        </button>
+        <div>
+          <h2 className="font-serif text-3xl font-medium">Add fee</h2>
+          <p className="text-sm text-muted">{kind === "player" ? "Choose a player" : "Choose a coach"}</p>
+        </div>
+      </div>
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-3 py-5 sm:px-5">
+        <section className="rounded-2xl border border-line bg-card/80 p-4 sm:p-5">
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted">
+              {kind === "player" ? "Player" : "Coach"}
+            </span>
+            <select
+              value={accountId}
+              onChange={(event) => {
+                setAccountId(event.target.value);
+                setError("");
+              }}
+              className="w-full rounded-xl border border-line bg-cream px-3 py-2 text-sm outline-none focus:border-terracotta"
+            >
+              {accounts.length === 0 ? <option value="">No accounts yet</option> : null}
+              {accounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted">Amount</span>
+              <input
+                inputMode="decimal"
+                value={amount}
+                onChange={(event) => {
+                  setAmount(event.target.value);
+                  setError("");
+                }}
+                className="w-full rounded-xl border border-line bg-cream px-3 py-2 text-sm outline-none focus:border-terracotta"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted">Due date</span>
+              <DateInput
+                value={dueDate}
+                onChange={(value) => {
+                  setDueDate(value);
+                  setError("");
+                }}
+                className="w-full rounded-xl border border-line bg-cream px-3 py-2 text-sm outline-none focus:border-terracotta"
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted">Status</span>
+              <select
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
+                className="w-full rounded-xl border border-line bg-cream px-3 py-2 text-sm outline-none focus:border-terracotta"
+              >
+                {statuses.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </section>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="submit"
+            disabled={pending || accounts.length === 0}
+            className="rounded-xl bg-terracotta px-5 py-2.5 text-sm font-bold text-white hover:bg-terracotta-dark disabled:opacity-60"
+          >
+            {pending ? "Saving" : "Save"}
+          </button>
+          {error ? <p className="text-sm text-terracotta">{error}</p> : null}
+        </div>
+      </div>
+    </form>
   );
 }
 

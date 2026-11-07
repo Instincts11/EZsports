@@ -22,8 +22,8 @@ class PlayerProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<StudentModel> playerAsync = ref.watch(studentProvider(playerId));
-    final String academy = ref.watch(homeDashboardProvider).maybeWhen(
+    final AsyncValue<StudentModel> playerAsync = watchStudent(ref, playerId);
+    final String academy = watchHomeDashboard(ref).maybeWhen(
       data: (HomeDashboardModel home) => home.academyName,
       orElse: () => '',
     );

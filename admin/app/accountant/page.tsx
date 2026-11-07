@@ -22,6 +22,7 @@ function AccountantDesk() {
   const [accountant, setAccountant] = useState<Accountant | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
@@ -35,6 +36,7 @@ function AccountantDesk() {
         setAccountant(current);
         setName(current?.name ?? "");
         setEmail(current?.email ?? "");
+        setMobile(current?.mobile ?? "");
       })
       .catch((cause: unknown) => {
         setError(cause instanceof ApiError ? cause.message : "The accountant could not be loaded.");
@@ -50,7 +52,12 @@ function AccountantDesk() {
     try {
       const saved = await api<Accountant>("/accountants", {
         method: "POST",
-        body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          password,
+          mobile: mobile.trim() || null,
+        }),
       });
       setAccountant(saved);
       setPassword("");
@@ -68,6 +75,7 @@ function AccountantDesk() {
     const body: Record<string, string> = {};
     if (name.trim() && name.trim() !== accountant.name) body.name = name.trim();
     if (email.trim() && email.trim() !== (accountant.email ?? "")) body.email = email.trim();
+    if (mobile.trim() !== (accountant.mobile ?? "")) body.mobile = mobile.trim();
     if (password) body.password = password;
     if (Object.keys(body).length === 0) {
       setNotice("No changes to save.");
@@ -85,6 +93,7 @@ function AccountantDesk() {
       setAccountant(saved);
       setName(saved.name);
       setEmail(saved.email ?? "");
+      setMobile(saved.mobile ?? "");
       setPassword("");
       setNotice("Saved");
     } catch (cause) {
@@ -105,6 +114,7 @@ function AccountantDesk() {
       setAccountant(null);
       setName("");
       setEmail("");
+      setMobile("");
       setPassword("");
       setNotice("Deleted");
     } catch (cause) {
@@ -119,7 +129,9 @@ function AccountantDesk() {
       <div className="flex-1 overflow-y-auto px-5 py-6">
         <p className="text-xs font-bold tracking-[0.18em] text-terracotta">ACADEMY SETUP</p>
         <h1 className="mt-2 font-serif text-4xl font-medium">Accountant</h1>
-        <p className="mt-2 max-w-xl text-sm text-muted">One accountant can sign in and manage fees.</p>
+        <p className="mt-2 max-w-xl text-sm text-muted">
+          The accountant signs in on the phone with this email and password, or with the contact number.
+        </p>
         {loading ? <p className="mt-6 text-sm text-muted">Loading</p> : null}
         {error ? <p className="mt-4 text-sm text-terracotta">{error}</p> : null}
         {notice ? <p className="mt-4 text-sm text-success">{notice}</p> : null}
@@ -139,6 +151,16 @@ function AccountantDesk() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 className={fieldClass}
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted">Contact number</span>
+              <input
+                inputMode="tel"
+                value={mobile}
+                onChange={(event) => setMobile(event.target.value)}
+                className={fieldClass}
+                placeholder="Mobile used to sign in"
               />
             </label>
             <label className="block">
@@ -173,6 +195,16 @@ function AccountantDesk() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 className={fieldClass}
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted">Contact number</span>
+              <input
+                inputMode="tel"
+                value={mobile}
+                onChange={(event) => setMobile(event.target.value)}
+                className={fieldClass}
+                placeholder="Mobile used to sign in"
               />
             </label>
             <label className="block">

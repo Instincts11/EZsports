@@ -29,27 +29,27 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<CoachProfileModel> profileAsync = ref.watch(coachProfileProvider);
+    final AsyncValue<CoachProfileModel> profileAsync = watchCoachProfile(ref);
     final CoachProfileModel? profile = profileAsync.asData?.value;
-    final int players = ref.watch(playersProvider).maybeWhen(
+    final int players = watchPlayers(ref).maybeWhen(
       data: (List<StudentModel> roster) => roster.length,
       orElse: () => 0,
     );
-    final int sessions = ref.watch(sessionsProvider).maybeWhen(
+    final int sessions = watchSessions(ref).maybeWhen(
       data: (List<SessionModel> items) => items.where((SessionModel session) => _inThisWeek(session.date)).length,
       orElse: () => 0,
     );
-    final List<MatchModel> fixtures = ref.watch(matchesProvider).maybeWhen(
+    final List<MatchModel> fixtures = watchMatches(ref).maybeWhen(
       data: (List<MatchModel> items) => items,
       orElse: () => const <MatchModel>[],
     );
     final int weekFixtures = fixtures.where((MatchModel match) => _inThisWeek(parseApiDate(match.date))).length;
     final String name = profile?.name.isNotEmpty == true ? profile!.name : 'Coach';
     final String initials = profile?.initials ?? 'C';
-    final HomeDashboardModel? home = ref.watch(homeDashboardProvider).asData?.value;
+    final HomeDashboardModel? home = watchHomeDashboard(ref).asData?.value;
     final String academy = home?.academyName ?? '';
     final String academyLabel = academy.isEmpty ? 'Academy' : academy;
-    final AsyncValue<List<LeaveModel>> leaves = ref.watch(coachLeavesProvider);
+    final AsyncValue<List<LeaveModel>> leaves = watchCoachLeaves(ref);
 
     return SafeArea(
       bottom: false,

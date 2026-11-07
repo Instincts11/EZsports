@@ -74,8 +74,8 @@ class _StudentAttendanceScreenState extends ConsumerState<StudentAttendanceScree
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<List<StudentModel>> roster = ref.watch(sessionRosterProvider(widget.sessionId));
-    final SessionModel? session = ref.watch(sessionsProvider).maybeWhen(
+    final AsyncValue<List<StudentModel>> roster = watchSessionRoster(ref, widget.sessionId);
+    final SessionModel? session = watchSessions(ref).maybeWhen(
       data: (List<SessionModel> items) {
         for (final SessionModel item in items) {
           if (item.sessionId == widget.sessionId) {

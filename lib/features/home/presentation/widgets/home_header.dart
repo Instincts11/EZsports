@@ -1,3 +1,4 @@
+import 'package:ezsports/core/storage/app_store.dart';
 import 'package:ezsports/core/constants/app_colors.dart';
 import 'package:ezsports/core/constants/app_icons.dart';
 import 'package:ezsports/core/constants/app_strings.dart';
@@ -18,7 +19,7 @@ class HomeHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final String academy = ref.watch(homeDashboardProvider).maybeWhen(
+    final String academy = watchHomeDashboard(ref).maybeWhen(
       data: (HomeDashboardModel home) => home.academyName,
       orElse: () => '',
     );
@@ -51,6 +52,7 @@ class HomeHeader extends ConsumerWidget {
               return;
             }
             ref.read(sessionRangeProvider.notifier).state = picked;
+            AppStore.saveRange(picked.start, picked.end);
             context.go('/sessions');
           },
           icon: const Icon(AppIcons.calendar, color: AppColors.cardBeige),

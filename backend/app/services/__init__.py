@@ -33,12 +33,13 @@ def _candidates_for_identifier(db: Session, identifier: str) -> list[User]:
     matches: list[User] = []
     admins = db.query(SuperAdmin).filter(func.substr(SuperAdmin.mobile, -10) == mobile).all()
     coaches = db.query(Coach).filter(func.substr(Coach.mobile, -10) == mobile).all()
+    accountants = db.query(Accountant).filter(func.substr(Accountant.mobile, -10) == mobile).all()
     students = (
         db.query(Student)
         .filter(Student.user_id.isnot(None), func.substr(Student.mobile, -10) == mobile)
         .all()
     )
-    for record in (*admins, *coaches, *students):
+    for record in (*admins, *coaches, *accountants, *students):
         user = record.user
         if user is not None and all(existing.user_id != user.user_id for existing in matches):
             matches.append(user)
@@ -90,6 +91,7 @@ def get_me(db: Session, user: User) -> MeResponse:
         admin_id = user.super_admin.admin_id
     elif user.role == UserRole.ACCOUNTANT and user.accountant:
         name = user.accountant.name
+        mobile = user.accountant.mobile
         admin_id = user.accountant.admin_id
         accountant_id = user.accountant.accountant_id
         academy_id = user.accountant.super_admin.academy_id

@@ -49,6 +49,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return '/home';
       case 'player':
         return '/player/home';
+      case 'accountant':
+        return '/accountant';
       default:
         return null;
     }
@@ -68,7 +70,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         final String? route = _homeForRole(result.role ?? '');
         if (route == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Admin and accountant accounts sign in at http://localhost:3000')),
+            const SnackBar(content: Text('Admin accounts sign in on the academy desk.')),
           );
           return;
         }
@@ -135,7 +137,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           return;
         }
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Admin and accountant accounts sign in at http://localhost:3000')),
+          const SnackBar(content: Text('Admin accounts sign in on the academy desk.')),
         );
         return;
       }
@@ -165,8 +167,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: ListView(
+      body: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          Image.asset(
+            'assets/images/football-field-lights.jpg',
+            fit: BoxFit.cover,
+          ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: <Color>[
+                  Color(0xCC12110F),
+                  Color(0x9912110F),
+                  Color(0xE612110F),
+                ],
+              ),
+            ),
+          ),
+          SafeArea(
+            child: ListView(
           padding: const EdgeInsets.all(24),
           children: <Widget>[
             const SizedBox(height: 40),
@@ -210,8 +232,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.playerAccent),
               ),
             ),
-          ],
-        ),
+            ],
+            ),
+          ),
+        ],
       ),
     );
   }

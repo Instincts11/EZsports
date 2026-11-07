@@ -134,6 +134,7 @@ export function DeskShell({
               <RailLink href="/batches" active={active === "batches"} label="Batches" icon={<BatchesIcon />} onOpen={chooseLink} />
               <RailLink href="/sessions" active={active === "sessions"} label="Sessions" icon={<SessionsIcon />} onOpen={chooseLink} />
               <RailLink href="/accountant" active={active === "accountant"} label="Accountant" icon={<AccountantIcon />} onOpen={chooseLink} />
+              <RailLink href="/fees" active={active === "fees"} label="Fees" icon={<FeesIcon />} onOpen={chooseLink} />
               <DateRangeButton onOpen={chooseLink} />
             </>
           )}

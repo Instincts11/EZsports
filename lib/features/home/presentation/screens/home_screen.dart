@@ -22,8 +22,8 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<HomeDashboardModel> dashboard = ref.watch(homeDashboardProvider);
-    final AsyncValue<List<StudentModel>> players = ref.watch(playersProvider);
+    final AsyncValue<HomeDashboardModel> dashboard = watchHomeDashboard(ref);
+    final AsyncValue<List<StudentModel>> players = watchPlayers(ref);
 
     return SafeArea(
       bottom: false,

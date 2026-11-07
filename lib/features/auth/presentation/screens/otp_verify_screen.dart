@@ -89,6 +89,8 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
         return '/home';
       case 'player':
         return '/player/home';
+      case 'accountant':
+        return '/accountant';
       default:
         return null;
     }
@@ -120,7 +122,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
           return;
         }
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Admin and accountant accounts sign in at http://localhost:3000')),
+          const SnackBar(content: Text('Admin accounts sign in on the academy desk.')),
         );
         return;
       }

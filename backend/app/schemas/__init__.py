@@ -74,12 +74,14 @@ class AccountantCreate(BaseModel):
     name: str
     email: EmailStr
     password: str
+    mobile: str | None = None
 
 
 class AccountantUpdate(BaseModel):
     name: str | None = None
     email: EmailStr | None = None
     password: str | None = None
+    mobile: str | None = None
 
 
 class AccountantResponse(ORMModel):
@@ -87,6 +89,7 @@ class AccountantResponse(ORMModel):
     admin_id: int
     name: str
     email: EmailStr | None = None
+    mobile: str | None = None
     assigned_at: datetime | None = None
 
 

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:ezsports/core/auth/auth_session.dart';
 import 'package:ezsports/core/network/api_constants.dart';
+import 'package:ezsports/core/storage/response_cache.dart';
 
 final class DioClient {
   DioClient._();
@@ -24,6 +25,13 @@ final class DioClient {
             options.headers['Authorization'] = 'Bearer $token';
           }
           handler.next(options);
+        },
+        onResponse: (Response<dynamic> response, ResponseInterceptorHandler handler) {
+          final int code = response.statusCode ?? 0;
+          if (response.requestOptions.method.toUpperCase() == 'GET' && code >= 200 && code < 300) {
+            ResponseCache.put(ResponseCache.keyFor(response.requestOptions), response.data);
+          }
+          handler.next(response);
         },
       ),
     );

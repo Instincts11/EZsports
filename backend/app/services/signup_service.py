@@ -197,7 +197,7 @@ def _login_user_for_mobile(db: Session, mobile: str) -> User:
     matches = [
         user
         for user in _candidates_for_identifier(db, mobile)
-        if user.is_active and user.role in (UserRole.COACH, UserRole.PLAYER, UserRole.SUPER_ADMIN)
+        if user.is_active and user.role in (UserRole.COACH, UserRole.PLAYER, UserRole.SUPER_ADMIN, UserRole.ACCOUNTANT)
     ]
     if len(matches) != 1:
         raise UnauthorizedError("No account uses this mobile number")
@@ -283,7 +283,7 @@ def verify_login_otp(db: Session, payload: OtpVerifyRequest) -> TokenResponse:
 
     data = json.loads(record.payload_json)
     user = db.query(User).filter(User.user_id == int(data["user_id"])).first()
-    if user is None or not user.is_active or user.role not in (UserRole.COACH, UserRole.PLAYER, UserRole.SUPER_ADMIN):
+    if user is None or not user.is_active or user.role not in (UserRole.COACH, UserRole.PLAYER, UserRole.SUPER_ADMIN, UserRole.ACCOUNTANT):
         raise UnauthorizedError("This OTP cannot authorize this account")
 
     record.is_used = True

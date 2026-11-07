@@ -1,4 +1,5 @@
 import 'package:ezsports/core/auth/auth_session.dart';
+import 'package:ezsports/core/storage/app_store.dart';
 import 'package:ezsports/core/constants/app_colors.dart';
 import 'package:ezsports/core/constants/app_icons.dart';
 import 'package:ezsports/core/constants/app_sizes.dart';
@@ -25,7 +26,7 @@ class PlayerAccountScreen extends ConsumerStatefulWidget {
 }
 
 class _PlayerAccountScreenState extends ConsumerState<PlayerAccountScreen> {
-  int _tab = 0;
+  int _tab = AppStore.playerTab;
 
   static const List<String> _tabs = <String>['Info', 'Attendance', 'Fixtures'];
 
@@ -39,8 +40,8 @@ class _PlayerAccountScreenState extends ConsumerState<PlayerAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<PlayerProfileModel> profileAsync = ref.watch(playerProfileProvider);
-    final PlayerHomeModel? home = ref.watch(playerHomeProvider).asData?.value;
+    final AsyncValue<PlayerProfileModel> profileAsync = watchPlayerProfile(ref);
+    final PlayerHomeModel? home = watchPlayerHome(ref).asData?.value;
     final String academy = home?.academyName ?? '';
     final String contact = <String>[
       if ((home?.phone ?? '').trim().isNotEmpty) home!.phone.trim(),
@@ -106,7 +107,10 @@ class _PlayerAccountScreenState extends ConsumerState<PlayerAccountScreen> {
                     for (int index = 0; index < _tabs.length; index++)
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => setState(() => _tab = index),
+                          onTap: () {
+                            setState(() => _tab = index);
+                            AppStore.savePlayerTab(index);
+                          },
                           child: Column(
                             children: <Widget>[
                               const SizedBox(height: 8),
@@ -227,7 +231,7 @@ class _AttendanceTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<List<PlayerAttendanceModel>> attendance = ref.watch(playerAttendanceProvider);
+    final AsyncValue<List<PlayerAttendanceModel>> attendance = watchPlayerAttendance(ref);
     return attendance.when(
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: 24),
@@ -268,7 +272,7 @@ class _FixturesTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<List<MatchModel>> matches = ref.watch(playerMatchesProvider);
+    final AsyncValue<List<MatchModel>> matches = watchPlayerMatches(ref);
     return matches.when(
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: 24),

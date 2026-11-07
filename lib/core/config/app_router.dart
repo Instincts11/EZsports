@@ -1,3 +1,4 @@
+import 'package:ezsports/core/auth/auth_session.dart';
 import 'package:ezsports/core/widgets/coach_shell.dart';
 import 'package:ezsports/core/widgets/player_shell.dart';
 import 'package:ezsports/features/attendance/presentation/screens/student_attendance_screen.dart';
@@ -5,6 +6,7 @@ import 'package:ezsports/features/auth/presentation/screens/login_screen.dart';
 import 'package:ezsports/features/auth/presentation/screens/otp_verify_screen.dart';
 import 'package:ezsports/features/auth/presentation/screens/player_signup_screen.dart';
 import 'package:ezsports/features/classes/presentation/screens/classes_screen.dart';
+import 'package:ezsports/features/fees/presentation/screens/accountant_home_screen.dart';
 import 'package:ezsports/features/home/presentation/screens/home_screen.dart';
 import 'package:ezsports/features/player/presentation/screens/player_batches_screen.dart';
 import 'package:ezsports/features/player/presentation/screens/player_details_screen.dart';
@@ -27,11 +29,34 @@ final class AppRouter {
 
   static final GoRouter router = GoRouter(
     navigatorKey: rootKey,
-    initialLocation: '/login',
+    initialLocation: AuthSession.startLocation(),
+    redirect: (BuildContext context, GoRouterState state) {
+      final String? role = AuthSession.roleSync;
+      final bool loggedIn = role != null && role.isNotEmpty;
+      final String path = state.uri.path;
+      final bool publicPage = path == '/login' || path == '/signup' || path.startsWith('/signup/');
+      if (!loggedIn && !publicPage) {
+        return '/login';
+      }
+      if (loggedIn && path == '/login') {
+        final String home = AuthSession.homeFor(role);
+        if (home != '/login') {
+          return home;
+        }
+      }
+      if (loggedIn) {
+        AuthSession.rememberPath(path);
+      }
+      return null;
+    },
     routes: <RouteBase>[
       GoRoute(
         path: '/login',
         builder: (BuildContext context, GoRouterState state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/accountant',
+        builder: (BuildContext context, GoRouterState state) => const AccountantHomeScreen(),
       ),
       GoRoute(
         path: '/signup',

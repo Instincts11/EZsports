@@ -20,8 +20,8 @@ class BatchRosterScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<List<BatchModel>> batches = ref.watch(batchesProvider);
-    final AsyncValue<List<StudentModel>> roster = ref.watch(batchRosterProvider(batchId));
+    final AsyncValue<List<BatchModel>> batches = watchBatches(ref);
+    final AsyncValue<List<StudentModel>> roster = watchBatchRoster(ref, batchId);
     final BatchModel? batch = batches.maybeWhen(
       data: (List<BatchModel> items) {
         for (final BatchModel item in items) {
