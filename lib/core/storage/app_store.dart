@@ -43,4 +43,23 @@ class AppStore {
     preferences?.setString('ezsports.rangeStart', start.toIso8601String());
     preferences?.setString('ezsports.rangeEnd', end.toIso8601String());
   }
+
+  static bool notifySessions(String role) => preferences?.getBool('ezsports.notify.$role.sessions') ?? true;
+
+  static bool notifyFixtures(String role) => preferences?.getBool('ezsports.notify.$role.fixtures') ?? true;
+
+  static bool notifyFees(String role) => preferences?.getBool('ezsports.notify.$role.fees') ?? false;
+
+  static Future<void> saveNotifications({
+    required String role,
+    required bool sessions,
+    required bool fixtures,
+    bool? fees,
+  }) async {
+    await preferences?.setBool('ezsports.notify.$role.sessions', sessions);
+    await preferences?.setBool('ezsports.notify.$role.fixtures', fixtures);
+    if (fees != null) {
+      await preferences?.setBool('ezsports.notify.$role.fees', fees);
+    }
+  }
 }

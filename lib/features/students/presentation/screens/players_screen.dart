@@ -47,46 +47,18 @@ class _PlayersScreenState extends ConsumerState<PlayersScreen> {
               if (visible.isEmpty) {
                 return const Text('No players match that search.', style: AppTextStyles.muted);
               }
-              final List<StudentModel> due = visible.where((StudentModel student) => student.feeDue).toList();
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  if (due.isNotEmpty) ...<Widget>[
-                    const Text('Needs a look', style: AppTextStyles.heading),
-                    const SizedBox(height: 10),
-                    CreamCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: due
-                            .take(4)
-                            .map(
-                              (StudentModel student) => Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: Text(
-                                  student.feeLine.isEmpty ? '${student.name} · fee due' : '${student.name} · ${student.feeLine}',
-                                  style: AppTextStyles.body,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                  ],
-                  CreamCard(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Column(
-                      children: visible
-                          .map(
-                            (StudentModel student) => StudentListTile(
-                              student: student,
-                              onTap: () => context.go('/players/${student.studentId}'),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
-                ],
+              return CreamCard(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(
+                  children: visible
+                      .map(
+                        (StudentModel student) => StudentListTile(
+                          student: student,
+                          onTap: () => context.go('/players/${student.studentId}'),
+                        ),
+                      )
+                      .toList(),
+                ),
               );
             },
             loading: () => const Padding(

@@ -5,7 +5,6 @@ import 'package:ezsports/core/constants/app_strings.dart';
 import 'package:ezsports/core/constants/app_text_styles.dart';
 import 'package:ezsports/core/utils/api_time.dart';
 import 'package:ezsports/core/widgets/cream_card.dart';
-import 'package:ezsports/core/widgets/fee_due_badge.dart';
 import 'package:ezsports/core/widgets/initials_avatar.dart';
 import 'package:ezsports/features/home/data/models/home_dashboard_model.dart';
 import 'package:ezsports/features/home/providers/home_providers.dart';
@@ -74,10 +73,6 @@ class PlayerProfileScreen extends ConsumerWidget {
                           Text(player.name, style: AppTextStyles.title),
                           const SizedBox(height: 6),
                           Text(academy.isEmpty ? 'Academy' : academy, style: AppTextStyles.muted),
-                          if (player.feeDue) ...<Widget>[
-                            const SizedBox(height: 8),
-                            const FeeDueBadge(),
-                          ],
                         ],
                       ),
                     ),
@@ -164,12 +159,6 @@ class PlayerProfileScreen extends ConsumerWidget {
               ],
             ),
           ),
-          if (player.feeLine.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 12),
-            CreamCard(
-              child: Text('Bill ${player.feeLine} · ${player.billStatus.isEmpty ? player.feeStatus : player.billStatus}', style: AppTextStyles.body),
-            ),
-          ],
           if (player.attendanceMarks.isNotEmpty) ...<Widget>[
             const SizedBox(height: 12),
             CreamCard(

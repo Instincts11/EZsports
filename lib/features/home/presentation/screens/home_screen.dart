@@ -1,5 +1,4 @@
 import 'package:ezsports/core/constants/app_colors.dart';
-import 'package:ezsports/core/constants/app_icons.dart';
 import 'package:ezsports/core/constants/app_sizes.dart';
 import 'package:ezsports/core/constants/app_strings.dart';
 import 'package:ezsports/core/constants/app_text_styles.dart';
@@ -11,8 +10,6 @@ import 'package:ezsports/features/home/presentation/widgets/home_header.dart';
 import 'package:ezsports/features/home/presentation/widgets/home_session_card.dart';
 import 'package:ezsports/features/home/presentation/widgets/sessions_summary_card.dart';
 import 'package:ezsports/features/home/providers/home_providers.dart';
-import 'package:ezsports/features/students/data/models/student_model.dart';
-import 'package:ezsports/features/students/providers/students_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -23,7 +20,6 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<HomeDashboardModel> dashboard = watchHomeDashboard(ref);
-    final AsyncValue<List<StudentModel>> players = watchPlayers(ref);
 
     return SafeArea(
       bottom: false,
@@ -124,45 +120,6 @@ class HomeScreen extends ConsumerWidget {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
                       ),
                       child: const Text(AppStrings.markAttendance, style: AppTextStyles.button),
-                    ),
-                  ],
-                ),
-              );
-            },
-            orElse: () => const SizedBox.shrink(),
-          ),
-          const SizedBox(height: 12),
-          players.maybeWhen(
-            data: (List<StudentModel> roster) {
-              final List<StudentModel> due = roster.where((StudentModel student) => student.feeDue).toList();
-              if (due.isEmpty) {
-                return const SizedBox.shrink();
-              }
-              return CreamCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text('${due.length} players with fees open', style: AppTextStyles.title),
-                    const SizedBox(height: 8),
-                    ...due.take(4).map(
-                      (StudentModel student) => Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Text(
-                          student.feeLine.isEmpty ? '${student.name} · ${student.parentMobile}' : '${student.name} · ${student.feeLine}',
-                          style: AppTextStyles.muted,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: () => context.go('/players'),
-                      child: const Row(
-                        children: <Widget>[
-                          Text('Open profiles', style: AppTextStyles.link),
-                          SizedBox(width: 2),
-                          Icon(AppIcons.forward, size: 16, color: AppColors.primary),
-                        ],
-                      ),
                     ),
                   ],
                 ),

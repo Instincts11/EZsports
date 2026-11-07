@@ -6,7 +6,6 @@ import 'package:ezsports/core/constants/app_text_styles.dart';
 import 'package:ezsports/core/widgets/app_button.dart';
 import 'package:ezsports/core/widgets/coach_search_field.dart';
 import 'package:ezsports/core/widgets/cream_card.dart';
-import 'package:ezsports/core/widgets/fee_due_badge.dart';
 import 'package:ezsports/core/widgets/initials_avatar.dart';
 import 'package:ezsports/features/attendance/providers/attendance_providers.dart';
 import 'package:ezsports/features/classes/data/models/session_model.dart';
@@ -137,15 +136,7 @@ class _StudentAttendanceScreenState extends ConsumerState<StudentAttendanceScree
                         .map(
                           (StudentModel student) => ListTile(
                             leading: InitialsAvatar(initials: student.initials),
-                            title: Row(
-                              children: <Widget>[
-                                Flexible(child: Text(student.name, style: AppTextStyles.body)),
-                                if (student.feeDue) ...<Widget>[
-                                  const SizedBox(width: 8),
-                                  const FeeDueBadge(compact: true),
-                                ],
-                              ],
-                            ),
+                            title: Text(student.name, style: AppTextStyles.body),
                             subtitle: student.skipReason.isNotEmpty
                                 ? Text('Skipping: ${student.skipReason}', style: AppTextStyles.muted)
                                 : student.checkedIn

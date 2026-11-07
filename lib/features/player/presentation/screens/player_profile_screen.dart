@@ -7,6 +7,7 @@ import 'package:ezsports/core/constants/app_text_styles.dart';
 import 'package:ezsports/core/network/api_error.dart';
 import 'package:ezsports/core/utils/api_time.dart';
 import 'package:ezsports/core/widgets/cream_card.dart';
+import 'package:ezsports/core/widgets/notification_prefs_sheet.dart';
 import 'package:ezsports/features/auth/data/auth_repository.dart';
 import 'package:ezsports/features/player/data/models/player_profile_model.dart';
 import 'package:ezsports/features/player/presentation/widgets/player_widgets.dart';
@@ -217,7 +218,7 @@ class _InfoTab extends StatelessWidget {
               _InfoRow('Signup OTP', _verifiedOn(profile.otpVerifiedAt)),
             ],
             const _Heading('Settings'),
-            _ChevronLine('Notifications', onTap: () => _showNotifications(context)),
+            _ChevronLine('Notifications', onTap: () => showPlayerNotifications(context)),
             _ChevronLine('Change password', onTap: () => _showChangePassword(context)),
             const SizedBox(height: 16),
             const _LogoutButton(),
@@ -491,51 +492,14 @@ Future<void> _showPlayerOverlay({
 }
 
 Future<void> showPlayerNotifications(BuildContext pageContext) {
-  return _showNotifications(pageContext);
-}
-
-Future<void> _showNotifications(BuildContext pageContext) {
-  bool sessions = true;
-  bool fixtures = true;
-  bool fees = false;
   return _showPlayerOverlay(
     pageContext: pageContext,
     builder: (BuildContext overlayContext, void Function(void Function()) setState) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          const Text('Notifications', style: TextStyle(fontSize: 22, color: AppColors.playerInk, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            activeThumbColor: AppColors.playerAccent,
-            title: const Text('Session reminders', style: TextStyle(color: AppColors.playerInk, fontWeight: FontWeight.w700)),
-            value: sessions,
-            onChanged: (bool value) => setState(() => sessions = value),
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            activeThumbColor: AppColors.playerAccent,
-            title: const Text('Fixture updates', style: TextStyle(color: AppColors.playerInk, fontWeight: FontWeight.w700)),
-            value: fixtures,
-            onChanged: (bool value) => setState(() => fixtures = value),
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            activeThumbColor: AppColors.playerAccent,
-            title: const Text('Fee reminders', style: TextStyle(color: AppColors.playerInk, fontWeight: FontWeight.w700)),
-            value: fees,
-            onChanged: (bool value) => setState(() => fees = value),
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => Navigator.of(overlayContext).pop(),
-              child: const Text('Done', style: TextStyle(color: AppColors.playerAccent, fontWeight: FontWeight.w700)),
-            ),
-          ),
-        ],
+      return const NotificationPrefsSheet(
+        role: 'player',
+        accent: AppColors.playerAccent,
+        ink: AppColors.playerInk,
+        includeFees: true,
       );
     },
   );

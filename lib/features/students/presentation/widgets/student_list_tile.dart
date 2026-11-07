@@ -1,7 +1,6 @@
 import 'package:ezsports/core/constants/app_colors.dart';
 import 'package:ezsports/core/constants/app_icons.dart';
 import 'package:ezsports/core/constants/app_text_styles.dart';
-import 'package:ezsports/core/widgets/fee_due_badge.dart';
 import 'package:ezsports/core/widgets/initials_avatar.dart';
 import 'package:ezsports/features/students/data/models/student_model.dart';
 import 'package:flutter/material.dart';
@@ -19,22 +18,10 @@ class StudentListTile extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       leading: InitialsAvatar(initials: student.initials),
       title: Text(student.name, style: AppTextStyles.body),
-      subtitle: student.batchName.isEmpty && student.feeLine.isEmpty
+      subtitle: student.batchName.isEmpty
           ? null
-          : Text(
-              <String>[
-                if (student.batchName.isNotEmpty) student.batchName,
-                if (student.feeLine.isNotEmpty) student.feeLine,
-              ].join(' · '),
-              style: AppTextStyles.caption,
-            ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          if (student.feeDue) const FeeDueBadge(compact: true),
-          const Icon(AppIcons.chevron, color: AppColors.textMuted),
-        ],
-      ),
+          : Text(student.batchName, style: AppTextStyles.caption),
+      trailing: const Icon(AppIcons.chevron, color: AppColors.textMuted),
     );
   }
 }
