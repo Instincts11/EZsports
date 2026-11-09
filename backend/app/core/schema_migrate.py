@@ -48,6 +48,7 @@ def ensure_runtime_schema() -> None:
     _add_column_if_missing("academies", "address", "address VARCHAR(255)")
     _add_column_if_missing("academies", "range_start", "range_start DATE")
     _add_column_if_missing("academies", "range_end", "range_end DATE")
+    _add_column_if_missing("batches", "centre", "centre VARCHAR(255)")
     _add_column_if_missing("batches", "kit", "kit VARCHAR(255)")
     _add_column_if_missing("batches", "meeting_point", "meeting_point VARCHAR(255)")
     _add_column_if_missing("batches", "focus", "focus VARCHAR(255)")

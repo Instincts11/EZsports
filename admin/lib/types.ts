@@ -45,6 +45,7 @@ export type Batch = {
   name: string;
   days: string;
   sport: string;
+  centre: string | null;
   meeting_point: string | null;
   focus: string | null;
   kit: string | null;
@@ -108,6 +109,16 @@ export type SessionCoach = {
   assignment_id: number;
   coach_id: number;
   coach_name: string | null;
+  attendance_status: "present" | "absent" | null;
+};
+
+export type SessionRosterStudent = {
+  student_id: number;
+  name: string;
+  fee_status: string;
+  attendance_status: "present" | "absent" | null;
+  checked_in: boolean;
+  skip_reason: string | null;
 };
 
 export type TrainingSession = {
@@ -117,8 +128,10 @@ export type TrainingSession = {
   date: string;
   start: string;
   end: string;
+  student_count: number;
   ground: string | null;
   note: string | null;
+  centre: string | null;
   meeting_point: string | null;
   focus: string | null;
   kit: string | null;

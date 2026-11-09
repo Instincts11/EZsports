@@ -42,9 +42,9 @@ def remove_student(
 def read_student(
     student_id: int,
     db: Session = Depends(get_db),
-    _: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN, UserRole.COACH, UserRole.ACCOUNTANT)),
+    current: CurrentUser = Depends(require_roles(UserRole.SUPER_ADMIN, UserRole.COACH, UserRole.ACCOUNTANT)),
 ) -> StudentResponse:
-    return get_student(db, student_id)
+    return get_student(db, student_id, current)
 
 
 @router.patch("/{student_id}", response_model=StudentResponse)

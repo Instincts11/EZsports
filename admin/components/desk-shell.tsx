@@ -17,7 +17,7 @@ export function DeskShell({
   mode,
   children,
 }: {
-  active: "academy" | "admins" | "coaches" | "players" | "batches" | "sessions" | "accountant" | "fees";
+  active: "academy" | "admins" | "coaches" | "players" | "batches" | "centres" | "sessions" | "accountant" | "fees";
   mode: "admin" | "accountant";
   children: React.ReactNode;
 }) {
@@ -132,6 +132,7 @@ export function DeskShell({
               <RailLink href="/coaches" active={active === "coaches"} label="Coaches" icon={<CoachesIcon />} onOpen={chooseLink} />
               <RailLink href="/players" active={active === "players"} label="Players" icon={<PlayersIcon />} onOpen={chooseLink} />
               <RailLink href="/batches" active={active === "batches"} label="Batches" icon={<BatchesIcon />} onOpen={chooseLink} />
+              <RailLink href="/centres" active={active === "centres"} label="Centres" icon={<CentresIcon />} onOpen={chooseLink} />
               <RailLink href="/sessions" active={active === "sessions"} label="Sessions" icon={<SessionsIcon />} onOpen={chooseLink} />
               <RailLink href="/accountant" active={active === "accountant"} label="Accountant" icon={<AccountantIcon />} onOpen={chooseLink} />
               <RailLink href="/fees" active={active === "fees"} label="Fees" icon={<FeesIcon />} onOpen={chooseLink} />
@@ -273,6 +274,15 @@ function BatchesIcon() {
       <path d="M12 3 3 8l9 5 9-5-9-5z" />
       <path d="M3 12l9 5 9-5" />
       <path d="M3 16l9 5 9-5" />
+    </RailSvg>
+  );
+}
+
+function CentresIcon() {
+  return (
+    <RailSvg>
+      <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" />
+      <circle cx="12" cy="10" r="2.4" />
     </RailSvg>
   );
 }

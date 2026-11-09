@@ -257,18 +257,27 @@ def create_student(db: Session, current: CurrentUser, payload: StudentCreate) ->
     return _student_response(loaded)
 
 
+def _for_viewer(response: StudentResponse, current: CurrentUser) -> StudentResponse:
+    if current.role != UserRole.COACH:
+        return response
+    return response.model_copy(
+        update={"mobile": None, "emergency_contact": None, "parent_mobile": "", "email": None}
+    )
+
+
 def list_students(db: Session, current: CurrentUser, batch_id: int | None = None) -> list[StudentResponse]:
     query = _students_query(db)
     if current.admin_id:
         query = query.filter(Student.admin_id == current.admin_id)
     if batch_id:
         query = query.join(Student.enrollments).filter_by(batch_id=batch_id)
-    return [_student_response(student) for student in query.all()]
+    return [_for_viewer(_student_response(student), current) for student in query.all()]
 
 
-def get_student(db: Session, student_id: int) -> StudentResponse:
+def get_student(db: Session, student_id: int, current: CurrentUser | None = None) -> StudentResponse:
     student = require_record(_students_query(db).filter(Student.student_id == student_id).first(), "Student not found")
-    return _student_response(student)
+    response = _student_response(student)
+    return _for_viewer(response, current) if current is not None else response
 
 
 def update_student(db: Session, student_id: int, payload: StudentUpdate) -> StudentResponse:

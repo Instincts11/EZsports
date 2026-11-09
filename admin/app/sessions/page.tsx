@@ -6,7 +6,7 @@ import { AuthGate } from "@/components/auth-gate";
 import { DateInput } from "@/components/date-input";
 import { DeskShell } from "@/components/desk-shell";
 import { ApiError, api } from "@/lib/api";
-import type { Batch, Coach, TrainingSession } from "@/lib/types";
+import type { Batch, Coach, SessionRosterStudent, TrainingSession } from "@/lib/types";
 
 const fieldClass =
   "w-full rounded-xl border border-line bg-cream px-3 py-2 text-sm text-ink-text outline-none focus:border-terracotta";
@@ -59,8 +59,11 @@ function markedSessions(sessions: TrainingSession[], now = Date.now()) {
 type SessionGroup = {
   key: string;
   label: string;
+  centre: string;
   sessions: TrainingSession[];
 };
+
+const noCentre = "No centre set";
 
 function groupSessions(sessions: TrainingSession[]): SessionGroup[] {
   const grouped = new Map<string, TrainingSession[]>();
@@ -77,6 +80,7 @@ function groupSessions(sessions: TrainingSession[]): SessionGroup[] {
       return {
         key,
         label: sample.batch_name || "Session",
+        centre: sample.centre?.trim() || noCentre,
         sessions: ordered,
       };
     })
@@ -117,6 +121,7 @@ export function SessionDesk({ group }: { group?: string }) {
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [drafts, setDrafts] = useState<Record<number, Draft>>({});
   const [assignChoice, setAssignChoice] = useState<Record<number, string>>({});
+  const [rosters, setRosters] = useState<Record<number, SessionRosterStudent[] | "loading">>({});
   const [creating, setCreating] = useState(emptyNew);
   const [loading, setLoading] = useState(true);
   const [pendingId, setPendingId] = useState<number | "new" | null>(null);
@@ -225,6 +230,56 @@ export function SessionDesk({ group }: { group?: string }) {
     }
   }
 
+  async function markCoach(session: TrainingSession, coachId: number, status: "present" | "absent") {
+    setPendingId(session.session_id);
+    setError("");
+    try {
+      await api(`/sessions/${session.session_id}/coach-attendance?coach_id=${coachId}`, {
+        method: "POST",
+        body: JSON.stringify({ status }),
+      });
+      setSessions((rows) =>
+        rows.map((row) =>
+          row.session_id === session.session_id
+            ? {
+                ...row,
+                coaches: row.coaches.map((coach) =>
+                  coach.coach_id === coachId ? { ...coach, attendance_status: status } : coach,
+                ),
+              }
+            : row,
+        ),
+      );
+      setNotice("Saved");
+    } catch (cause) {
+      fail(cause, "The coach attendance could not be saved.");
+    } finally {
+      setPendingId(null);
+    }
+  }
+
+  async function toggleRoster(session: TrainingSession) {
+    const id = session.session_id;
+    const close = () =>
+      setRosters((current) => {
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
+    if (rosters[id]) {
+      close();
+      return;
+    }
+    setRosters((current) => ({ ...current, [id]: "loading" }));
+    try {
+      const rows = await api<SessionRosterStudent[]>(`/sessions/${id}/students`);
+      setRosters((current) => ({ ...current, [id]: rows }));
+    } catch (cause) {
+      close();
+      fail(cause, "The players for this session could not be loaded.");
+    }
+  }
+
   async function unassign(sessionId: number, assignmentId: number) {
     setPendingId(sessionId);
     setError("");
@@ -279,7 +334,8 @@ export function SessionDesk({ group }: { group?: string }) {
         <p className="text-xs font-bold tracking-[0.18em] text-terracotta">ACADEMY SETUP</p>
         <h1 className="mt-2 font-serif text-4xl font-medium">Sessions</h1>
         <p className="mt-2 max-w-xl text-sm text-muted">
-          Each batch is one session. Open it to see every date. Current and latest dates are highlighted.
+          Batches are grouped by centre. Open a batch to see every date, mark coach attendance, and see its players.
+          Current and latest dates are highlighted.
         </p>
         {loading ? <p className="mt-6 text-sm text-muted">Loading sessions</p> : null}
         {error ? <p className="mt-4 text-sm text-terracotta">{error}</p> : null}
@@ -380,6 +436,7 @@ export function SessionDesk({ group }: { group?: string }) {
                   <p className="font-serif text-2xl">{session.batch_name || "Session"}</p>
                   <p className="text-sm text-muted">
                     {draft.date} · {draft.start}–{draft.end}
+                    {session.centre ? ` · ${session.centre}` : ""}
                   </p>
                   {badges.map((badge) => (
                     <span key={badge} className="rounded-full bg-terracotta px-2.5 py-0.5 text-xs font-bold text-white">
@@ -446,19 +503,39 @@ export function SessionDesk({ group }: { group?: string }) {
                   />
                 </label>
                 <div className="sm:col-span-2">
-                  <p className="mb-2 text-xs font-semibold tracking-wide text-muted">Assigned coaches</p>
+                  <p className="mb-2 text-xs font-semibold tracking-wide text-muted">Assigned coaches and attendance</p>
                   {session.coaches.length === 0 ? <p className="text-sm text-muted">No coach assigned</p> : null}
                   <ul className="flex flex-col gap-2">
                     {session.coaches.map((coach) => (
-                      <li key={coach.assignment_id} className="flex items-center justify-between gap-3 text-sm">
+                      <li key={coach.assignment_id} className="flex flex-wrap items-center justify-between gap-3 text-sm">
                         <span>{coach.coach_name || "Coach"}</span>
-                        <button
-                          type="button"
-                          onClick={() => unassign(session.session_id, coach.assignment_id)}
-                          className="font-semibold text-terracotta"
-                        >
-                          Remove
-                        </button>
+                        <span className="flex items-center gap-2">
+                          {(["present", "absent"] as const).map((status) => (
+                            <button
+                              key={status}
+                              type="button"
+                              disabled={pendingId === session.session_id}
+                              aria-pressed={coach.attendance_status === status}
+                              onClick={() => markCoach(session, coach.coach_id, status)}
+                              className={`rounded-full px-3 py-1 text-xs font-bold capitalize disabled:opacity-60 ${
+                                coach.attendance_status === status
+                                  ? status === "present"
+                                    ? "bg-teal text-white"
+                                    : "bg-terracotta text-white"
+                                  : "border border-line bg-cream text-ink-text hover:border-terracotta"
+                              }`}
+                            >
+                              {status}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => unassign(session.session_id, coach.assignment_id)}
+                            className="ml-1 font-semibold text-terracotta"
+                          >
+                            Remove
+                          </button>
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -484,6 +561,16 @@ export function SessionDesk({ group }: { group?: string }) {
                     </div>
                   ) : null}
                 </div>
+                <div className="sm:col-span-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleRoster(session)}
+                    className="text-sm font-semibold text-terracotta"
+                  >
+                    {rosters[session.session_id] ? "Hide players" : `Show players (${session.student_count})`}
+                  </button>
+                  <SessionRoster rows={rosters[session.session_id]} />
+                </div>
                 <div className="flex items-center gap-3 sm:col-span-2">
                   <button
                     type="button"
@@ -507,27 +594,81 @@ export function SessionDesk({ group }: { group?: string }) {
   );
 }
 
+function SessionRoster({ rows }: { rows?: SessionRosterStudent[] | "loading" }) {
+  if (!rows) return null;
+  if (rows === "loading") return <p className="mt-2 text-sm text-muted">Loading players</p>;
+  if (rows.length === 0) return <p className="mt-2 text-sm text-muted">No players in this batch yet.</p>;
+  const present = rows.filter((row) => row.attendance_status === "present").length;
+  return (
+    <div className="mt-3 overflow-hidden rounded-xl border border-line">
+      <p className="border-b border-line bg-cream/60 px-3 py-2 text-xs font-semibold text-muted">
+        {present} of {rows.length} marked present
+      </p>
+      <ul className="divide-y divide-line">
+        {rows.map((row) => (
+          <li key={row.student_id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
+            <span className="font-semibold">{row.name}</span>
+            <span className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-muted">
+                {row.skip_reason ? `Skipping: ${row.skip_reason}` : row.checked_in ? "Checked in" : ""}
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 font-bold ${
+                  row.attendance_status === "present"
+                    ? "bg-teal text-white"
+                    : row.attendance_status === "absent"
+                      ? "bg-terracotta text-white"
+                      : "bg-cream text-muted"
+                }`}
+              >
+                {row.attendance_status === "present" ? "Present" : row.attendance_status === "absent" ? "Absent" : "Not marked"}
+              </span>
+              <span className="rounded-full border border-line px-2 py-0.5 capitalize text-muted">Fee {row.fee_status}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function SessionTabs({ groups, selected }: { groups: SessionGroup[]; selected?: string }) {
   if (groups.length === 0) return null;
+  const centres = new Map<string, SessionGroup[]>();
+  for (const item of groups) {
+    centres.set(item.centre, [...(centres.get(item.centre) ?? []), item]);
+  }
+  const ordered = [...centres.entries()].sort(([left], [right]) => {
+    if (left === noCentre) return 1;
+    if (right === noCentre) return -1;
+    return left.localeCompare(right);
+  });
   return (
-    <div className="flex flex-wrap gap-2 border-b border-line bg-cream/60 p-3" role="tablist" aria-label="Sessions">
-      {groups.map((item) => {
-        const active = item.key === selected;
-        return (
-          <Link
-            key={item.key}
-            href={`/sessions/${item.key}`}
-            role="tab"
-            aria-selected={active}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${
-              active ? "bg-terracotta text-white" : "border border-line bg-card text-ink-text hover:border-terracotta"
-            }`}
-          >
-            {item.label}
-            <span className={active ? "text-white/80" : "text-muted"}> {item.sessions.length}</span>
-          </Link>
-        );
-      })}
+    <div className="flex flex-col gap-3 border-b border-line bg-cream/60 p-3" role="tablist" aria-label="Sessions">
+      {ordered.map(([centre, items]) => (
+        <div key={centre}>
+          <p className="mb-2 text-xs font-bold tracking-[0.14em] text-muted uppercase">{centre}</p>
+          <div className="flex flex-wrap gap-2">
+            {items.map((item) => {
+              const active = item.key === selected;
+              return (
+                <Link
+                  key={item.key}
+                  href={`/sessions/${item.key}`}
+                  role="tab"
+                  aria-selected={active}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                    active ? "bg-terracotta text-white" : "border border-line bg-card text-ink-text hover:border-terracotta"
+                  }`}
+                >
+                  {item.label}
+                  <span className={active ? "text-white/80" : "text-muted"}> {item.sessions.length}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

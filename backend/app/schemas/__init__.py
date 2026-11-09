@@ -279,6 +279,7 @@ class BatchCreate(BaseModel):
     name: str
     days: str = "Not set"
     sport: str = "Football"
+    centre: str | None = None
     description: str | None = None
     coach_id: int | None = None
 
@@ -287,6 +288,7 @@ class BatchUpdate(BaseModel):
     name: str | None = None
     days: str | None = None
     sport: str | None = None
+    centre: str | None = None
     meeting_point: str | None = None
     focus: str | None = None
     kit: str | None = None
@@ -300,6 +302,7 @@ class BatchResponse(ORMModel):
     name: str
     days: str
     sport: str
+    centre: str | None = None
     meeting_point: str | None = None
     focus: str | None = None
     kit: str | None = None
@@ -343,6 +346,7 @@ class SessionCoachBrief(BaseModel):
     assignment_id: int
     coach_id: int
     coach_name: str | None = None
+    attendance_status: AttendanceStatus | None = None
 
 
 class SessionResponse(ORMModel):
@@ -358,6 +362,7 @@ class SessionResponse(ORMModel):
     coaches: list[SessionCoachBrief] = []
     ground: str | None = None
     note: str | None = None
+    centre: str | None = None
     meeting_point: str | None = None
     focus: str | None = None
     kit: str | None = None

@@ -46,6 +46,7 @@ def _batch_response(batch: Batch) -> BatchResponse:
         name=batch.name,
         days=batch.days,
         sport=batch.sport,
+        centre=batch.centre,
         meeting_point=batch.meeting_point,
         focus=batch.focus,
         kit=batch.kit,
@@ -65,6 +66,7 @@ def create_batch(db: Session, current: CurrentUser, payload: BatchCreate) -> Bat
         name=payload.name,
         days=payload.days,
         sport=payload.sport,
+        centre=payload.centre,
         description=payload.description,
         coach_id=payload.coach_id,
     )
@@ -148,6 +150,7 @@ def unenroll_student(db: Session, enrollment_id: int) -> None:
 
 
 def _session_response(session: TrainingSession) -> SessionResponse:
+    coach_marks = {row.coach_id: row.status for row in session.coach_attendances}
     return SessionResponse(
         session_id=session.session_id,
         batch_id=session.batch_id,
@@ -163,11 +166,13 @@ def _session_response(session: TrainingSession) -> SessionResponse:
                 assignment_id=assignment.assignment_id,
                 coach_id=assignment.coach_id,
                 coach_name=assignment.coach.name if assignment.coach is not None else None,
+                attendance_status=coach_marks.get(assignment.coach_id),
             )
             for assignment in session.assignments
         ],
         ground=session.ground,
         note=session.note,
+        centre=session.batch.centre if session.batch else None,
         meeting_point=session.batch.meeting_point if session.batch else None,
         focus=session.batch.focus if session.batch else None,
         kit=session.batch.kit if session.batch else None,

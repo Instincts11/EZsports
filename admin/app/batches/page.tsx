@@ -12,12 +12,14 @@ const buttonClass = "rounded-xl bg-terracotta px-4 py-2 text-sm font-bold text-w
 
 type Draft = {
   name: string;
+  centre: string;
   coach_id: string;
   description: string;
 };
 
 const emptyDraft: Draft = {
   name: "",
+  centre: "",
   coach_id: "",
   description: "",
 };
@@ -25,6 +27,7 @@ const emptyDraft: Draft = {
 function toDraft(batch: Batch): Draft {
   return {
     name: batch.name,
+    centre: batch.centre ?? "",
     coach_id: batch.coach_id ? String(batch.coach_id) : "",
     description: batch.description ?? "",
   };
@@ -74,6 +77,7 @@ function BatchDesk() {
   function payload(draft: Draft) {
     return {
       name: draft.name.trim(),
+      centre: draft.centre.trim() || null,
       description: draft.description.trim() || null,
       coach_id: draft.coach_id ? Number(draft.coach_id) : null,
     };
@@ -146,6 +150,8 @@ function BatchDesk() {
     }
   }
 
+  const centreNames = [...new Set(batches.map((batch) => batch.centre?.trim()).filter((name): name is string => !!name))].sort();
+
   return (
     <DeskShell active="batches" mode="admin">
       <div className="flex-1 overflow-y-auto px-5 py-6">
@@ -158,6 +164,12 @@ function BatchDesk() {
         <form onSubmit={create} className="mt-6 grid max-w-3xl gap-3 rounded-2xl border border-line bg-card p-4 sm:grid-cols-2 min-[1300px]:max-w-none">
           <p className="font-serif text-2xl sm:col-span-2">Add batch</p>
           <Labeled label="Name" value={creating.name} onChange={(value) => setCreating({ ...creating, name: value })} />
+          <Labeled
+            label="Centre"
+            value={creating.centre}
+            list="centre-names"
+            onChange={(value) => setCreating({ ...creating, centre: value })}
+          />
           <CoachField
             coaches={coaches}
             value={creating.coach_id}
@@ -174,13 +186,27 @@ function BatchDesk() {
           </div>
         </form>
 
+        <datalist id="centre-names">
+          {centreNames.map((name) => (
+            <option key={name} value={name} />
+          ))}
+        </datalist>
+
         <div className="mt-6 flex max-w-3xl flex-col gap-4 min-[1300px]:max-w-none">
           {batches.map((batch) => {
             const draft = drafts[batch.batch_id] ?? toDraft(batch);
             return (
               <div key={batch.batch_id} className="grid gap-3 rounded-2xl border border-line bg-card p-4 sm:grid-cols-2">
-                <p className="text-sm text-muted sm:col-span-2">{batch.student_count} students</p>
+                <p className="text-sm text-muted sm:col-span-2">
+                  {batch.student_count} students{batch.centre ? ` · ${batch.centre}` : ""}
+                </p>
                 <Labeled label="Name" value={draft.name} onChange={(value) => patch(batch.batch_id, { name: value })} />
+                <Labeled
+                  label="Centre"
+                  value={draft.centre}
+                  list="centre-names"
+                  onChange={(value) => patch(batch.batch_id, { centre: value })}
+                />
                 <CoachField
                   coaches={coaches}
                   value={draft.coach_id}
@@ -215,16 +241,18 @@ function BatchDesk() {
 function Labeled({
   label,
   value,
+  list,
   onChange,
 }: {
   label: string;
   value: string;
+  list?: string;
   onChange: (value: string) => void;
 }) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-xs font-semibold tracking-wide text-muted">{label}</span>
-      <input value={value} onChange={(event) => onChange(event.target.value)} className={fieldClass} />
+      <input value={value} list={list} onChange={(event) => onChange(event.target.value)} className={fieldClass} />
     </label>
   );
 }
