@@ -1,6 +1,8 @@
 import { clearToken, getToken } from "@/lib/session";
 
-const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+const apiBase =
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  "https://academyapp-ddfwe3asf7dyhqgn.southindia-01.azurewebsites.net";
 
 export class ApiError extends Error {
   status: number;

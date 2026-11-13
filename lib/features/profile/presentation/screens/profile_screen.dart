@@ -10,7 +10,6 @@ import 'package:ezsports/features/profile/data/models/leave_model.dart';
 import 'package:ezsports/core/widgets/app_button.dart';
 import 'package:ezsports/core/widgets/cream_card.dart';
 import 'package:ezsports/core/widgets/notification_prefs_sheet.dart';
-import 'package:ezsports/core/auth/auth_session.dart';
 import 'package:ezsports/features/home/data/models/home_dashboard_model.dart';
 import 'package:ezsports/features/home/providers/home_providers.dart';
 import 'package:ezsports/features/classes/data/models/session_model.dart';
@@ -180,7 +179,7 @@ class ProfileScreen extends ConsumerWidget {
                   height: 48,
                   child: OutlinedButton(
                     onPressed: () async {
-                      await AuthSession.clear();
+                      await AuthRepository().logout();
                       if (context.mounted) {
                         context.go('/login');
                       }

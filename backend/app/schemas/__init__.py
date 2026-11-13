@@ -28,12 +28,16 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     role: UserRole
+    expires_at: datetime | None = None
 
 
 class MeResponse(ORMModel):
     user_id: int
     email: EmailStr
     role: UserRole
+    is_logged_in: bool = False
+    logged_in_at: datetime | None = None
+    session_ends_at: datetime | None = None
     name: str | None = None
     mobile: str | None = None
     academy_name: str | None = None

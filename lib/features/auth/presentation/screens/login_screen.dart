@@ -65,27 +65,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) {
         return;
       }
-      final String? token = result.accessToken;
-      if (token != null && token.isNotEmpty) {
-        final String? route = _homeForRole(result.role ?? '');
-        if (route == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Admin accounts sign in on the academy desk.')),
-          );
-          return;
-        }
-        await AuthSession.save(token: token, role: result.role ?? '');
-        if (!mounted) {
-          return;
-        }
-        context.go(route);
-        return;
-      }
       context.push(
         '/signup/otp',
         extra: <String, String>{
           'mobile': result.mobile,
           'purpose': 'login',
+          'testCode': result.otp ?? '',
         },
       );
     } on DioException catch (error) {

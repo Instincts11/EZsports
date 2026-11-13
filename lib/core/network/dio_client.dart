@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:ezsports/core/auth/auth_session.dart';
+import 'package:ezsports/core/config/app_router.dart';
 import 'package:ezsports/core/network/api_constants.dart';
 import 'package:ezsports/core/storage/response_cache.dart';
 
@@ -32,6 +33,16 @@ final class DioClient {
             ResponseCache.put(ResponseCache.keyFor(response.requestOptions), response.data);
           }
           handler.next(response);
+        },
+        onError: (DioException error, ErrorInterceptorHandler handler) async {
+          final bool signedOut = error.response?.statusCode == 401 &&
+              !error.requestOptions.path.contains('/auth/') &&
+              AuthSession.roleSync != null;
+          if (signedOut) {
+            await AuthSession.clear();
+            AppRouter.router.go('/login');
+          }
+          handler.next(error);
         },
       ),
     );

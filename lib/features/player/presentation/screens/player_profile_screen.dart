@@ -1,4 +1,3 @@
-import 'package:ezsports/core/auth/auth_session.dart';
 import 'package:ezsports/core/storage/app_store.dart';
 import 'package:ezsports/core/constants/app_colors.dart';
 import 'package:ezsports/core/constants/app_icons.dart';
@@ -633,7 +632,7 @@ class _LogoutButton extends StatelessWidget {
       height: 48,
       child: OutlinedButton(
         onPressed: () async {
-          await AuthSession.clear();
+          await AuthRepository().logout();
           if (context.mounted) {
             context.go('/login');
           }

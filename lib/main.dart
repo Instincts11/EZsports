@@ -19,7 +19,7 @@ class EzSportsApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'ID Sports',
       theme: AppTheme.coach,
-      routerConfig: AppRouter.router,
+      routerConfig: AppRouter.router,  
       builder: (BuildContext context, Widget? child) {
         return MobileViewport(child: child ?? const SizedBox.shrink());
       },

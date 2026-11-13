@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:ezsports/core/auth/auth_session.dart';
+import 'package:ezsports/features/auth/data/auth_repository.dart';
 import 'package:ezsports/core/storage/app_store.dart';
 import 'package:ezsports/core/constants/app_colors.dart';
 import 'package:ezsports/core/constants/app_text_styles.dart';
@@ -128,7 +128,7 @@ class _AccountantHomeScreenState extends State<AccountantHomeScreen> {
                   const Expanded(child: Text('Fees', style: AppTextStyles.pageTitle)),
                   TextButton(
                     onPressed: () async {
-                      await AuthSession.clear();
+                      await AuthRepository().logout();
                       if (context.mounted) {
                         context.go('/login');
                       }

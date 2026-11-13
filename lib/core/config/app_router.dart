@@ -72,6 +72,7 @@ final class AppRouter {
           return OtpVerifyScreen(
             mobile: data['mobile'] ?? '',
             purpose: data['purpose'] ?? 'signup',
+            testCode: data['testCode'] ?? '',
           );
         },
       ),

@@ -17,11 +17,13 @@ class OtpVerifyScreen extends ConsumerStatefulWidget {
   const OtpVerifyScreen({
     required this.mobile,
     this.purpose = 'signup',
+    this.testCode = '',
     super.key,
   });
 
   final String mobile;
   final String purpose;
+  final String testCode;
 
   @override
   ConsumerState<OtpVerifyScreen> createState() => _OtpVerifyScreenState();
@@ -179,6 +181,20 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
                 style: AppTextStyles.muted,
               ),
             ),
+            if (widget.testCode.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(bottom: 18),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.playerCardAlt,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.playerGold),
+                ),
+                child: Text(
+                  'SMS is not set up yet. Test code: ${widget.testCode}',
+                  style: const TextStyle(color: AppColors.playerCream, fontWeight: FontWeight.w700),
+                ),
+              ),
             Row(
               children: List<Widget>.generate(_otpLength, (int index) {
                 return Expanded(

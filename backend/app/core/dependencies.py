@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -8,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.exceptions import ForbiddenError, UnauthorizedError
+from app.core.sessions import DAILY_ROLES, session_is_current
 from app.models import Accountant, Coach, Student, SuperAdmin, User, UserRole
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -45,6 +47,11 @@ def get_current_user(
     user = db.get(User, int(user_id))
     if user is None or not user.is_active:
         raise UnauthorizedError()
+    if user.role in DAILY_ROLES and not session_is_current(user, datetime.now(timezone.utc)):
+        if user.is_logged_in:
+            user.is_logged_in = False
+            db.commit()
+        raise UnauthorizedError("You are signed out. Sign in again with an OTP.")
 
     current = CurrentUser(user=user, role=user.role)
 

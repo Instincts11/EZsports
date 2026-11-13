@@ -18,6 +18,7 @@ from app.schemas import (
     TokenResponse,
 )
 from app.services import authenticate, get_me
+from app.services.session_service import end_session
 from app.services.signup_service import (
     request_login_otp,
     request_signup_otp,
@@ -92,6 +93,17 @@ def login_verify_otp(payload: OtpVerifyRequest, db: Session = Depends(get_db)) -
 def me(current: CurrentUser = Depends(get_current_user), db: Session = Depends(get_db)) -> MeResponse:
     """Requires `Authorization: Bearer <access_token>` from POST /api/v1/auth/login."""
     return get_me(db, current.user)
+
+
+@router.post(
+    "/logout",
+    response_model=MessageResponse,
+    summary="Sign out and set is_logged_in to false",
+)
+def logout(current: CurrentUser = Depends(get_current_user), db: Session = Depends(get_db)) -> MessageResponse:
+    """Coach and player tokens stop working until the next OTP sign-in."""
+    end_session(db, current.user)
+    return MessageResponse(message="Signed out")
 
 
 @router.post(

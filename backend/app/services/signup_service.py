@@ -8,10 +8,12 @@ from fastapi import status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.exceptions import AppError, ConflictError, NotFoundError, UnauthorizedError
 from app.services.email_service import send_password_email
+from app.services.session_service import start_session
 from app.services.sms_service import send_otp_sms
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import hash_password, verify_password
 from app.models import OtpCode, Student, SuperAdmin, User, UserRole
 from app.models.enums import BillStatus
 from app.schemas import (
@@ -34,6 +36,28 @@ def _normalize_mobile(raw: str) -> str:
 
 def _display_name(first_name: str, last_name: str) -> str:
     return f"{first_name.strip()} {last_name.strip()}".strip()
+
+
+def _deliver_otp(db: Session, mobile: str, otp: str) -> str | None:
+    """Returns the code itself only while SMS is not set up outside production."""
+    try:
+        send_otp_sms(mobile, otp)
+    except AppError as error:
+        unconfigured = error.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+        if not unconfigured or settings.app_env.strip().lower() == "production":
+            db.rollback()
+            raise
+        return otp
+    return None
+
+
+def _otp_sent(mobile: str, expires_in: int, test_code: str | None) -> OtpRequestResponse:
+    message = (
+        "SMS is not set up yet, so the code is returned here for testing."
+        if test_code
+        else "OTP sent to your mobile. Enter the code from that message."
+    )
+    return OtpRequestResponse(message=message, mobile=mobile, expires_in_seconds=expires_in, otp=test_code)
 
 
 def request_signup_otp(db: Session, payload: PlayerSignupRequest) -> OtpRequestResponse:
@@ -76,28 +100,10 @@ def request_signup_otp(db: Session, payload: PlayerSignupRequest) -> OtpRequestR
         payload_json=json.dumps(signup_payload),
         expires_at=expires_at,
     )
-    try:
-        send_otp_sms(mobile, otp)
-    except AppError as error:
-        db.rollback()
-        if error.status_code != status.HTTP_503_SERVICE_UNAVAILABLE:
-            raise
-        token = _open_player_account(db, signup_payload, mobile, datetime.now(timezone.utc))
-        return OtpRequestResponse(
-            message="Signed in",
-            mobile=mobile,
-            expires_in_seconds=0,
-            access_token=token.access_token,
-            role=token.role,
-        )
+    test_code = _deliver_otp(db, mobile, otp)
     db.add(record)
     db.commit()
-
-    return OtpRequestResponse(
-        message="OTP sent to your mobile. Enter the code from that message.",
-        mobile=mobile,
-        expires_in_seconds=expires_in,
-    )
+    return _otp_sent(mobile, expires_in, test_code)
 
 
 def verify_signup_otp(db: Session, payload: OtpVerifyRequest) -> TokenResponse:
@@ -186,9 +192,7 @@ def _open_player_account(db: Session, data: dict, mobile: str, now: datetime) ->
     )
     db.add(student)
     db.commit()
-
-    token = create_access_token(str(user.user_id), user.role.value)
-    return TokenResponse(access_token=token, role=user.role)
+    return start_session(db, user)
 
 
 def _login_user_for_mobile(db: Session, mobile: str) -> User:
@@ -215,8 +219,6 @@ def request_login_otp(db: Session, payload: MobileRequest) -> OtpRequestResponse
         OtpCode.is_used.is_(False),
     ).update({"is_used": True, "used_at": now})
 
-    user_id = user.user_id
-    role = user.role
     otp = f"{secrets.randbelow(1_000_000):06d}"
     expires_in = 600
     record = OtpCode(
@@ -224,31 +226,13 @@ def request_login_otp(db: Session, payload: MobileRequest) -> OtpRequestResponse
         email=user.email,
         code_hash=hash_password(otp),
         purpose="login",
-        payload_json=json.dumps({"user_id": user_id}),
+        payload_json=json.dumps({"user_id": user.user_id}),
         expires_at=now + timedelta(seconds=expires_in),
     )
-    try:
-        send_otp_sms(mobile, otp)
-    except AppError as error:
-        db.rollback()
-        if error.status_code != status.HTTP_503_SERVICE_UNAVAILABLE:
-            raise
-        token = create_access_token(str(user_id), role.value)
-        return OtpRequestResponse(
-            message="Signed in",
-            mobile=mobile,
-            expires_in_seconds=0,
-            access_token=token,
-            role=role,
-        )
+    test_code = _deliver_otp(db, mobile, otp)
     db.add(record)
     db.commit()
-
-    return OtpRequestResponse(
-        message="OTP sent to your mobile. Enter the code from that message.",
-        mobile=mobile,
-        expires_in_seconds=expires_in,
-    )
+    return _otp_sent(mobile, expires_in, test_code)
 
 
 def verify_login_otp(db: Session, payload: OtpVerifyRequest) -> TokenResponse:
@@ -289,9 +273,7 @@ def verify_login_otp(db: Session, payload: OtpVerifyRequest) -> TokenResponse:
     record.is_used = True
     record.used_at = now
     db.commit()
-
-    token = create_access_token(str(user.user_id), user.role.value)
-    return TokenResponse(access_token=token, role=user.role)
+    return start_session(db, user)
 
 
 def _readable_password() -> str:
@@ -305,8 +287,6 @@ def send_login_password(db: Session, payload: EmailRequest) -> MessageResponse:
     if user is None or not user.is_active or user.role not in (UserRole.COACH, UserRole.PLAYER):
         raise UnauthorizedError("No coach or player account uses this email")
 
-    user_id = user.user_id
-    role = user.role
     now = datetime.now(timezone.utc)
     db.query(OtpCode).filter(
         OtpCode.email == user.email,
@@ -321,8 +301,8 @@ def send_login_password(db: Session, payload: EmailRequest) -> MessageResponse:
         db.rollback()
         if error.status_code != status.HTTP_503_SERVICE_UNAVAILABLE:
             raise
-        token = create_access_token(str(user_id), role.value)
-        return MessageResponse(message="Signed in", access_token=token, role=role)
+        session = start_session(db, user)
+        return MessageResponse(message="Signed in", access_token=session.access_token, role=session.role)
 
     record = OtpCode(
         mobile="",

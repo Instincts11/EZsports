@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+import 'package:ezsports/core/auth/auth_session.dart';
 import 'package:ezsports/core/network/api_endpoints.dart';
 import 'package:ezsports/core/network/dio_client.dart';
 import 'package:ezsports/features/auth/data/models/otp_request_model.dart';
@@ -10,6 +12,16 @@ class AuthRepository {
       data: <String, String>{'identifier': identifier, 'password': password},
     );
     return UserModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> logout() async {
+    try {
+      await DioClient.instance.post(ApiEndpoints.logout);
+    } on DioException {
+      // Sign out on this phone even when the API cannot be reached.
+    } finally {
+      await AuthSession.clear();
+    }
   }
 
   Future<UserModel> me() async {

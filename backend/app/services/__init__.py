@@ -4,9 +4,11 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import ConflictError, NotFoundError, UnauthorizedError
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import hash_password, verify_password
 from app.models import Academy, Accountant, Coach, Student, SuperAdmin, User, UserRole
+from app.core.sessions import DAILY_ROLES, day_ends_at
 from app.schemas import LoginRequest, MeResponse, TokenResponse
+from app.services.session_service import start_session
 
 _APP_ROLES = (UserRole.COACH, UserRole.PLAYER, UserRole.SUPER_ADMIN, UserRole.ACCOUNTANT)
 
@@ -70,8 +72,7 @@ def authenticate(db: Session, payload: LoginRequest) -> TokenResponse:
     user = matched[0]
     if user.role not in _APP_ROLES:
         raise UnauthorizedError("This account cannot sign in here")
-    token = create_access_token(str(user.user_id), user.role.value)
-    return TokenResponse(access_token=token, role=user.role)
+    return start_session(db, user)
 
 
 def get_me(db: Session, user: User) -> MeResponse:
@@ -117,6 +118,9 @@ def get_me(db: Session, user: User) -> MeResponse:
         user_id=user.user_id,
         email=user.email,
         role=user.role,
+        is_logged_in=user.is_logged_in,
+        logged_in_at=user.logged_in_at,
+        session_ends_at=day_ends_at(user.logged_in_at) if user.role in DAILY_ROLES and user.logged_in_at else None,
         name=name,
         mobile=mobile,
         academy_name=academy_name,

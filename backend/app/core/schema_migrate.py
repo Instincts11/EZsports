@@ -37,6 +37,8 @@ def ensure_runtime_schema() -> None:
     )
     for column, ddl in student_columns:
         _add_column_if_missing("students", column, ddl)
+    _add_column_if_missing("users", "is_logged_in", "is_logged_in BOOLEAN NOT NULL DEFAULT FALSE")
+    _add_column_if_missing("users", "logged_in_at", "logged_in_at TIMESTAMP WITH TIME ZONE")
     _add_column_if_missing("super_admins", "mobile", "mobile VARCHAR(20)")
     _add_column_if_missing("accountants", "mobile", "mobile VARCHAR(20)")
     _add_column_if_missing("sessions", "ground", "ground VARCHAR(255)")

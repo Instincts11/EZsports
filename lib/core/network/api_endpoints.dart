@@ -6,6 +6,7 @@ final class ApiEndpoints {
   static const String loginRequestOtp = '/api/v1/auth/login/request-otp';
   static const String loginVerifyOtp = '/api/v1/auth/login/verify-otp';
   static const String me = '/api/v1/auth/me';
+  static const String logout = '/api/v1/auth/logout';
   static const String changePassword = '/api/v1/auth/change-password';
   static const String signupRequestOtp = '/api/v1/auth/signup/request-otp';
   static const String signupVerifyOtp = '/api/v1/auth/signup/verify-otp';
