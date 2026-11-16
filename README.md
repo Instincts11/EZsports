@@ -76,13 +76,15 @@ flutter test
 
 Start this in a second terminal when you want the backend. The Flutter screens above do not call it.
 
+Use the project Python 3.12 (not system Python 3.15 — that breaks `pydantic`):
+
 ```powershell
 cd backend
-python -m venv .venv
+..\.tooling\python312\python.exe -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 Copy-Item .env.example .env
-python run.py
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 If PowerShell blocks the activate script, allow it for this window only, then activate again:
@@ -92,15 +94,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
 ```
 
-You can skip activation and call the venv Python directly:
-
-```powershell
-cd backend
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-Copy-Item .env.example .env
-.\.venv\Scripts\python.exe run.py
-```
+If `.venv` already exists, skip the `venv` create step and only activate it.
 
 The API listens on port 8000.
 
