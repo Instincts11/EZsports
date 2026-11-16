@@ -16,7 +16,7 @@ export default function PlayersPage() {
       <PlayerDesk />
     </AuthGate>
   );
-}
+}                                                          
 
 function playerDetail(student: Student): string {
   const batch = student.batch_name || "No batch";

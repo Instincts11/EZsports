@@ -105,6 +105,14 @@ class SuperAdminResponse(ORMModel):
     academy_name: str | None = None
 
 
+class SuperAdminUpdate(BaseModel):
+    name: str | None = None
+    email: EmailStr | None = None
+    mobile: str | None = None
+    academy_name: str | None = None
+    password: str | None = None
+
+
 class CoachCreate(BaseModel):
     name: str
     email: EmailStr

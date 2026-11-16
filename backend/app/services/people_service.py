@@ -35,6 +35,7 @@ from app.schemas import (
     StudentResponse,
     StudentUpdate,
     SuperAdminResponse,
+    SuperAdminUpdate,
 )
 from app.services import create_login_user, require_record
 
@@ -431,18 +432,68 @@ def _require_password(password: str) -> None:
         raise AppError(status.HTTP_400_BAD_REQUEST, "Password must be at least 6 characters")
 
 
+def _admin_response(admin: SuperAdmin) -> SuperAdminResponse:
+    return SuperAdminResponse(
+        admin_id=admin.admin_id,
+        name=admin.name,
+        email=admin.user.email if admin.user is not None else None,
+        mobile=admin.mobile,
+        academy_name=admin.academy.name if admin.academy is not None else None,
+    )
+
+
 def list_admins(db: Session, current: CurrentUser) -> list[SuperAdminResponse]:
     query = db.query(SuperAdmin).options(joinedload(SuperAdmin.user), joinedload(SuperAdmin.academy))
     if current.admin_id is not None:
         query = query.filter(SuperAdmin.admin_id == current.admin_id)
     admins = query.order_by(SuperAdmin.name).all()
-    return [
-        SuperAdminResponse(
-            admin_id=admin.admin_id,
-            name=admin.name,
-            email=admin.user.email if admin.user is not None else None,
-            mobile=admin.mobile,
-            academy_name=admin.academy.name if admin.academy is not None else None,
+    return [_admin_response(admin) for admin in admins]
+
+
+def update_admin(db: Session, current: CurrentUser, admin_id: int, payload: SuperAdminUpdate) -> SuperAdminResponse:
+    if current.admin_id is None or current.admin_id != admin_id:
+        raise ForbiddenError()
+    admin = require_record(
+        db.query(SuperAdmin)
+        .options(joinedload(SuperAdmin.user), joinedload(SuperAdmin.academy))
+        .filter(SuperAdmin.admin_id == admin_id)
+        .first(),
+        "Admin not found",
+    )
+    changes = payload.model_dump(exclude_unset=True)
+    email = changes.pop("email", None)
+    password = _clean_password(changes.pop("password", None))
+    academy_name = changes.pop("academy_name", None)
+    if "name" in changes:
+        name = (changes.pop("name") or "").strip()
+        if not name:
+            raise AppError(status.HTTP_400_BAD_REQUEST, "Name is required")
+        admin.name = name
+    if "mobile" in changes:
+        admin.mobile = _blank(changes.pop("mobile"))
+    if academy_name is not None:
+        cleaned = academy_name.strip()
+        if not cleaned:
+            raise AppError(status.HTTP_400_BAD_REQUEST, "Academy name is required")
+        if admin.academy is None:
+            raise NotFoundError("Academy not found")
+        admin.academy.name = cleaned
+    if password is not None:
+        if admin.user is None:
+            raise NotFoundError("This admin has no sign-in account")
+        admin.user.password_hash = hash_password(password)
+    if email is not None:
+        if admin.user is None:
+            raise NotFoundError("This admin has no sign-in account")
+        cleaned = email.lower().strip()
+        taken = (
+            db.query(User)
+            .filter(func.lower(User.email) == cleaned, User.user_id != admin.user_id)
+            .first()
         )
-        for admin in admins
-    ]
+        if taken is not None:
+            raise ConflictError("An account with this email already exists")
+        admin.user.email = cleaned
+    db.commit()
+    db.refresh(admin)
+    return _admin_response(admin)

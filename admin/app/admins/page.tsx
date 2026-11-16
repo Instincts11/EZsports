@@ -1,12 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AuthGate } from "@/components/auth-gate";
 import { DeskShell } from "@/components/desk-shell";
-import { Field, Section } from "@/components/fields";
+import { Field, SaveBar, Section } from "@/components/fields";
 import { PersonList } from "@/components/person-list";
 import { ApiError, api } from "@/lib/api";
+import { changedText } from "@/lib/patch";
 import type { AcademyAdmin } from "@/lib/types";
+
+const keys = ["name", "email", "mobile", "academy_name", "password"] as const;
+type AdminField = (typeof keys)[number];
+type AdminForm = Record<AdminField, string>;
+
+function toForm(admin: AcademyAdmin): AdminForm {
+  return {
+    name: admin.name ?? "",
+    email: admin.email ?? "",
+    mobile: admin.mobile ?? "",
+    academy_name: admin.academy_name ?? "",
+    password: "",
+  };
+}
 
 export default function AdminsPage() {
   return (
@@ -66,36 +81,115 @@ function AdminDesk() {
         />
         <section className={`${selected ? "flex" : "hidden lg:flex"} min-w-0 flex-1 flex-col`}>
           {selected ? (
-            <div className="flex min-h-0 flex-1 flex-col">
-              <div className="flex items-center gap-3 border-b border-line px-5 py-4">
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(null)}
-                  className="text-sm font-semibold text-terracotta lg:hidden"
-                >
-                  Back
-                </button>
-                <div>
-                  <h2 className="font-serif text-3xl font-medium">{selected.name}</h2>
-                  <p className="text-sm text-muted">Admin account</p>
-                </div>
-              </div>
-              <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-3 py-5 sm:px-5">
-                <Section title="Account">
-                  <Field label="Name" value={selected.name} readOnly />
-                  <Field label="Email" value={selected.email || ""} readOnly />
-                  <Field label="Mobile" value={selected.mobile || ""} readOnly />
-                  <Field label="Academy" value={selected.academy_name || ""} readOnly wide />
-                </Section>
-              </div>
-            </div>
+            <AdminEditor
+              key={selected.admin_id}
+              admin={selected}
+              onBack={() => setSelectedId(null)}
+              onSaved={(saved) => {
+                setAdmins((rows) => rows.map((row) => (row.admin_id === saved.admin_id ? saved : row)));
+              }}
+            />
           ) : (
             <p className="m-auto max-w-sm px-6 text-center text-sm text-muted">
-              Select an admin to see the account stored in the database.
+              Select an admin to update the account stored in the database.
             </p>
           )}
         </section>
       </div>
     </DeskShell>
+  );
+}
+
+function AdminEditor({
+  admin,
+  onBack,
+  onSaved,
+}: {
+  admin: AcademyAdmin;
+  onBack: () => void;
+  onSaved: (admin: AcademyAdmin) => void;
+}) {
+  const [baseline, setBaseline] = useState(admin);
+  const [form, setForm] = useState<AdminForm>(() => toForm(admin));
+  const [pending, setPending] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+
+  function setField(key: AdminField, value: string) {
+    setForm((current) => ({ ...current, [key]: value }));
+    setNotice("");
+    setError("");
+  }
+
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault();
+    const { patch, message } = changedText(
+      toForm(baseline),
+      form,
+      keys,
+      ["name", "email", "academy_name"],
+      "Name, email, and academy are required.",
+    );
+    if (message) {
+      setError(message);
+      setNotice("");
+      return;
+    }
+    if (Object.keys(patch).length === 0) {
+      setNotice("No changes to save.");
+      setError("");
+      return;
+    }
+    setPending(true);
+    setError("");
+    setNotice("");
+    try {
+      const saved = await api<AcademyAdmin>(`/admins/${admin.admin_id}`, {
+        method: "PATCH",
+        body: JSON.stringify(patch),
+      });
+      setBaseline(saved);
+      setForm(toForm(saved));
+      setNotice("Saved");
+      onSaved(saved);
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : "The admin could not be saved.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex items-center gap-3 border-b border-line px-5 py-4">
+        <button type="button" onClick={onBack} className="text-sm font-semibold text-terracotta lg:hidden">
+          Back
+        </button>
+        <div>
+          <h2 className="font-serif text-3xl font-medium">{baseline.name}</h2>
+          <p className="text-sm text-muted">Admin account</p>
+        </div>
+      </div>
+      <form onSubmit={onSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-3 py-5 sm:px-5">
+        <Section title="Account">
+          <Field label="Name" value={form.name} onChange={(value) => setField("name", value)} />
+          <Field label="Mobile" value={form.mobile} onChange={(value) => setField("mobile", value)} />
+          <Field label="Email" type="email" value={form.email} onChange={(value) => setField("email", value)} />
+          <Field
+            label="New password"
+            type="password"
+            value={form.password}
+            onChange={(value) => setField("password", value)}
+          />
+          <Field
+            label="Academy"
+            value={form.academy_name}
+            onChange={(value) => setField("academy_name", value)}
+            wide
+          />
+        </Section>
+        <SaveBar pending={pending} notice={notice} error={error} label="Save admin" />
+      </form>
+    </div>
   );
 }
